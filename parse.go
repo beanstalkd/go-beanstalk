@@ -52,4 +52,3 @@ func parseSize(s string) (string, int, error) {
 	}
 	return s[:i], n, nil
 }
-

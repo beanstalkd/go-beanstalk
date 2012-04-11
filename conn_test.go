@@ -169,7 +169,7 @@ func TestStats(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(m) != 1 || m["a"] != "ok" {
-		t.Fatalf("expected %#v, got %#v", map[string]string{"a":"ok"}, m)
+		t.Fatalf("expected %#v, got %#v", map[string]string{"a": "ok"}, m)
 	}
 	if err = c.Close(); err != nil {
 		t.Fatal(err)
@@ -184,7 +184,7 @@ func TestStatsJob(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(m) != 1 || m["a"] != "ok" {
-		t.Fatalf("expected %#v, got %#v", map[string]string{"a":"ok"}, m)
+		t.Fatalf("expected %#v, got %#v", map[string]string{"a": "ok"}, m)
 	}
 	if err = c.Close(); err != nil {
 		t.Fatal(err)

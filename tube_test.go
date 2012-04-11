@@ -97,7 +97,7 @@ func TestTubeStats(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(m) != 1 || m["a"] != "ok" {
-		t.Fatalf("expected %#v, got %#v", map[string]string{"a":"ok"}, m)
+		t.Fatalf("expected %#v, got %#v", map[string]string{"a": "ok"}, m)
 	}
 	if err = c.Close(); err != nil {
 		t.Fatal(err)
@@ -107,7 +107,7 @@ func TestTubeStats(t *testing.T) {
 func TestTubePause(t *testing.T) {
 	c := NewConn(mock("pause-tube default 5\r\n", "PAUSED\r\n"))
 
-	err := c.Pause(5*time.Second)
+	err := c.Pause(5 * time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}

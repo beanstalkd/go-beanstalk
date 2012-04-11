@@ -7,7 +7,7 @@ import (
 
 func TestParseDict(t *testing.T) {
 	d := parseDict([]byte("---\na: 1\nb: 2\n"))
-	if !reflect.DeepEqual(d, map[string]string{"a":"1", "b":"2"}) {
+	if !reflect.DeepEqual(d, map[string]string{"a": "1", "b": "2"}) {
 		t.Fatalf("got %v", d)
 	}
 }
