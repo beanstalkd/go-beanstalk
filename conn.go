@@ -136,11 +136,12 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 		if err != nil {
 			return nil, ConnError{c, r.op, err}
 		}
-		body = make([]byte, size)
+		body = make([]byte, size+2) // include trailing CR NL
 		_, err = io.ReadFull(c.c.R, body)
 		if err != nil {
 			return nil, ConnError{c, r.op, err}
 		}
+		body = body[:size] // exclude trailing CR NL
 	}
 
 	err = scan(toScan, f, a...)
