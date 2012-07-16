@@ -151,7 +151,7 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 	return body, nil
 }
 
-// Delete deletes the given job id.
+// Delete deletes the given job.
 func (c *Conn) Delete(id uint64) error {
 	r, err := c.cmd(nil, nil, nil, "delete", id)
 	if err != nil {
@@ -161,10 +161,10 @@ func (c *Conn) Delete(id uint64) error {
 	return err
 }
 
-// Release sets the priotiry of job id to pri, removes it from the list
-// of jobs reserved by the client c, waits delay seconds, then places
-// the job in the ready queue, thus making it available for reservation
-// by any client. Calls to Release return before the delay period.
+// Release tells the server to perform the following actions:
+// set the priority of the given job to pri, remove it from the list of
+// jobs reserved by c, wait delay seconds, then place the job in the
+// ready queue, which makes it available for reservation by any client.
 func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
 	r, err := c.cmd(nil, nil, nil, "release", id, pri, dur(delay))
 	if err != nil {
@@ -174,7 +174,7 @@ func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
 	return err
 }
 
-// Bury places the given job id in a holding area in the job's tube and
+// Bury places the given job in a holding area in the job's tube and
 // sets its priority to pri. The job will not be scheduled again until it
 // has been kicked; see also the documentation of Kick.
 func (c *Conn) Bury(id uint64, pri uint32) error {
@@ -186,7 +186,7 @@ func (c *Conn) Bury(id uint64, pri uint32) error {
 	return err
 }
 
-// Touch resets the reservation timeout for job id to the job's TTR.
+// Touch resets the reservation timer for the given job.
 // It is an error if the job isn't currently reserved by c.
 // See the documentation of Reserve for more details.
 func (c *Conn) Touch(id uint64) error {
@@ -198,7 +198,7 @@ func (c *Conn) Touch(id uint64) error {
 	return err
 }
 
-// Peek gets a copy of job id from the server.
+// Peek gets a copy of the specified job from the server.
 func (c *Conn) Peek(id uint64) (body []byte, err error) {
 	r, err := c.cmd(nil, nil, nil, "peek", id)
 	if err != nil {
@@ -217,7 +217,7 @@ func (c *Conn) Stats() (map[string]string, error) {
 	return parseDict(body), err
 }
 
-// StatsJob retrieves statistics about job id.
+// StatsJob retrieves statistics about the given job.
 func (c *Conn) StatsJob(id uint64) (map[string]string, error) {
 	r, err := c.cmd(nil, nil, nil, "stats-job", id)
 	if err != nil {
@@ -227,7 +227,7 @@ func (c *Conn) StatsJob(id uint64) (map[string]string, error) {
 	return parseDict(body), err
 }
 
-// ListTubes returns a slice of the names of the tubes that currently
+// ListTubes returns the names of the tubes that currently
 // exist on the server.
 func (c *Conn) ListTubes() ([]string, error) {
 	r, err := c.cmd(nil, nil, nil, "list-tubes")
