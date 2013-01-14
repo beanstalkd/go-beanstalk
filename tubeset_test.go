@@ -21,3 +21,20 @@ func TestTubeSetReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestTubeSetReserveTimeout(t *testing.T) {
+	c := NewConn(mock("reserve-with-timeout 1\r\n", "TIMED_OUT\r\n"))
+	_, _, err := c.Reserve(time.Second)
+	if cerr, ok := err.(ConnError); !ok {
+		t.Log(err)
+		t.Logf("%#v", err)
+		t.Fatal("expected ConnError")
+	} else if cerr.Err != ErrTimeout {
+		t.Log(err)
+		t.Logf("%#v", err)
+		t.Fatal("expected ErrTimeout")
+	}
+	if err = c.Close(); err != nil {
+		t.Fatal(err)
+	}
+}

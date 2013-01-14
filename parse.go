@@ -44,7 +44,7 @@ func parseList(dat []byte) []string {
 func parseSize(s string) (string, int, error) {
 	i := strings.LastIndex(s, " ")
 	if i == -1 {
-		return "", 0, unknownRespError(s)
+		return "", 0, findRespError(s)
 	}
 	n, err := strconv.Atoi(s[i+1:])
 	if err != nil {

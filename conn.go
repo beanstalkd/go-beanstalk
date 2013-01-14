@@ -241,11 +241,7 @@ func (c *Conn) ListTubes() ([]string, error) {
 func scan(input, format string, a ...interface{}) error {
 	_, err := fmt.Sscanf(input, format, a...)
 	if err != nil {
-		err = respError[input]
-		if err != nil {
-			return err
-		}
-		return unknownRespError(input)
+		return findRespError(input)
 	}
 	return nil
 }

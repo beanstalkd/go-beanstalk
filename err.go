@@ -50,3 +50,10 @@ type unknownRespError string
 func (e unknownRespError) Error() string {
 	return "unknown response: " + string(e)
 }
+
+func findRespError(s string) error {
+	if err := respError[s]; err != nil {
+		return err
+	}
+	return unknownRespError(s)
+}
