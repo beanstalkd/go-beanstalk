@@ -155,7 +155,7 @@ func (c *Conn) printLine(cmd string, args ...interface{}) {
 }
 
 func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body []byte, err error) {
-	fmt.Println("Calling readResp with %x", c.c)
+	fmt.Printf("Calling readResp with %x\n", c.c)
 
 	c.c.StartResponse(r.id)
 	defer c.c.EndResponse(r.id)
