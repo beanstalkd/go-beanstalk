@@ -63,15 +63,16 @@ func (c *Conn) Close() error {
 }
 
 // Try to re-establish a closed connection. This will attempt to re-establish
-// for up to two minutes, so anything calling this should probably occur in a goroutine
+// for up to one minutes, so anything calling this should probably occur in a goroutine
 // or be OK with blocking
 func (c *Conn) reconnect() (err error) {
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 120; i++ {
+		fmt.Println("Attempting to reconnect to beanstalk")
 		if c.c, err = textproto.Dial(c.network, c.addr); err == nil {
 			fmt.Println("Reconnecting to beanstalk")
 			break
 		} else {
-			time.Sleep(10 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 	}
 	return
@@ -82,6 +83,10 @@ func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interfa
 	c.c.StartRequest(r.id)
 	err := c.adjustTubes(t, ts)
 	if err != nil {
+
+		fmt.Println("Error in cmd 87")
+		fmt.Println(err)
+
 		return req{}, err
 	}
 	if body != nil {
@@ -94,7 +99,8 @@ func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interfa
 	}
 	err = c.c.W.Flush()
 	if err != nil {
-
+		fmt.Println("Error in cmd 98")
+		fmt.Println(err)
 		if err == io.EOF {
 
 			if retryErr := c.reconnect(); retryErr == nil {
@@ -156,6 +162,8 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 		line, err = c.c.ReadLine()
 	}
 	if err != nil {
+		fmt.Println("Error in readResp 161")
+		fmt.Println(err)
 
 		if err == io.EOF {
 			if retryErr := c.reconnect(); retryErr == nil {
@@ -171,6 +179,9 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 		toScan, size, err = parseSize(toScan)
 		if err != nil {
 
+			fmt.Println("Error in readResp 178")
+			fmt.Println(err)
+
 			if err == io.EOF {
 				if retryErr := c.reconnect(); retryErr == nil {
 					return c.readResp(r, readBody, f, a...)
@@ -182,6 +193,9 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 		body = make([]byte, size+2) // include trailing CR NL
 		_, err = io.ReadFull(c.c.R, body)
 		if err != nil {
+
+			fmt.Println("Error in readResp 193")
+			fmt.Println(err)
 
 			if err == io.EOF {
 				if retryErr := c.reconnect(); retryErr == nil {
@@ -196,6 +210,9 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 
 	err = scan(toScan, f, a...)
 	if err != nil {
+
+		fmt.Println("Error in readResp 210")
+		fmt.Println(err)
 
 		if err == io.EOF {
 			if retryErr := c.reconnect(); retryErr == nil {
