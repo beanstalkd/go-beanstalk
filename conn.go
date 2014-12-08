@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/textproto"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,9 @@ type Conn struct {
 	c       *textproto.Conn
 	used    string
 	watched map[string]bool
+	mu      sync.Mutex // guards the connections
+	addr    string
+	network string
 	Tube
 	TubeSet
 }
@@ -31,13 +35,15 @@ var (
 )
 
 // NewConn returns a new Conn using conn for I/O.
-func NewConn(conn io.ReadWriteCloser) *Conn {
+func newConn(conn io.ReadWriteCloser, network, addr string) *Conn {
 	c := new(Conn)
 	c.c = textproto.NewConn(conn)
 	c.Tube = Tube{c, "default"}
 	c.TubeSet = *NewTubeSet(c, "default")
 	c.used = "default"
 	c.watched = map[string]bool{"default": true}
+	c.network = network
+	c.addr = addr
 	return c
 }
 
@@ -48,12 +54,26 @@ func Dial(network, addr string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewConn(c), nil
+	return newConn(c, network, addr), nil
 }
 
 // Close closes the underlying network connection.
 func (c *Conn) Close() error {
 	return c.c.Close()
+}
+
+// Try to re-establish a closed connection. This will attempt to re-establish
+// for up to two minutes, so anything calling this should probably occur in a goroutine
+// or be OK with blocking
+func (c *Conn) reconnect() (err error) {
+	for i := 0; i < 12; i++ {
+		if c.c, err = textproto.Dial(c.network, c.addr); err == nil {
+			break
+		} else {
+			time.Sleep(10 * time.Second)
+		}
+	}
+	return
 }
 
 func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interface{}) (req, error) {
@@ -73,6 +93,14 @@ func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interfa
 	}
 	err = c.c.W.Flush()
 	if err != nil {
+
+		if err == io.EOF {
+
+			if retryErr := c.reconnect(); retryErr == nil {
+				return c.cmd(t, ts, body, op, args...)
+			}
+		}
+
 		return req{}, ConnError{c, op, err}
 	}
 	c.c.EndRequest(r.id)
@@ -127,6 +155,13 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 		line, err = c.c.ReadLine()
 	}
 	if err != nil {
+
+		if err == io.EOF {
+			if retryErr := c.reconnect(); retryErr == nil {
+				return c.readResp(r, readBody, f, a...)
+			}
+		}
+
 		return nil, ConnError{c, r.op, err}
 	}
 	toScan := line
@@ -134,11 +169,25 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 		var size int
 		toScan, size, err = parseSize(toScan)
 		if err != nil {
+
+			if err == io.EOF {
+				if retryErr := c.reconnect(); retryErr == nil {
+					return c.readResp(r, readBody, f, a...)
+				}
+			}
+
 			return nil, ConnError{c, r.op, err}
 		}
 		body = make([]byte, size+2) // include trailing CR NL
 		_, err = io.ReadFull(c.c.R, body)
 		if err != nil {
+
+			if err == io.EOF {
+				if retryErr := c.reconnect(); retryErr == nil {
+					return c.readResp(r, readBody, f, a...)
+				}
+			}
+
 			return nil, ConnError{c, r.op, err}
 		}
 		body = body[:size] // exclude trailing CR NL
@@ -146,6 +195,13 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 
 	err = scan(toScan, f, a...)
 	if err != nil {
+
+		if err == io.EOF {
+			if retryErr := c.reconnect(); retryErr == nil {
+				return c.readResp(r, readBody, f, a...)
+			}
+		}
+
 		return nil, ConnError{c, r.op, err}
 	}
 	return body, nil
