@@ -68,6 +68,7 @@ func (c *Conn) Close() error {
 func (c *Conn) reconnect() (err error) {
 	for i := 0; i < 12; i++ {
 		if c.c, err = textproto.Dial(c.network, c.addr); err == nil {
+			fmt.Println("Reconnecting to beanstalk")
 			break
 		} else {
 			time.Sleep(10 * time.Second)
