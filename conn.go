@@ -65,15 +65,13 @@ func (c *Conn) Close() error {
 }
 
 // Try to re-establish a closed connection. This will attempt to re-establish
-// for up to one minutes, so anything calling this should probably occur in a goroutine
+// for up to two minutes, so anything calling this should probably occur in a goroutine
 // or be OK with blocking
 func (c *Conn) Reconnect() (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for i := 0; i < connectRetries; i++ {
-		fmt.Println("Attempting to reconnect to beanstalk")
 		if c.c, err = textproto.Dial(c.network, c.addr); err == nil {
-			fmt.Println("Reconnecting to beanstalk")
 			c.TubeSet = *NewTubeSet(c, "default")
 			c.used = "default"
 			c.watched = map[string]bool{"default": true}
