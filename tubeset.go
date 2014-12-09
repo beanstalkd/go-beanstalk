@@ -20,13 +20,7 @@ func NewTubeSet(c *Conn, name ...string) *TubeSet {
 	return ts
 }
 
-// Reserve reserves and returns a job from one of the tubes in t. If no
-// job is available before time timeout has passed, Reserve returns a
-// ConnError recording ErrTimeout.
-//
-// Typically, a client will reserve a job, perform some work, then delete
-// the job with Conn.Delete.
-func (t *TubeSet) Reserve(timeout time.Duration) (id uint64, body []byte, err error) {
+func (t *TubeSet) reserve(timeout time.Duration) (id uint64, body []byte, err error) {
 	r, err := t.Conn.cmd(nil, t, nil, "reserve-with-timeout", dur(timeout))
 	if err != nil {
 		return 0, nil, err
@@ -36,4 +30,21 @@ func (t *TubeSet) Reserve(timeout time.Duration) (id uint64, body []byte, err er
 		return 0, nil, err
 	}
 	return id, body, nil
+}
+
+// Reserve reserves and returns a job from one of the tubes in t. If no
+// job is available before time timeout has passed, Reserve returns a
+// ConnError recording ErrTimeout.
+//
+// Typically, a client will reserve a job, perform some work, then delete
+// the job with Conn.Delete.
+func (t *TubeSet) Reserve(timeout time.Duration) (id uint64, body []byte, err error) {
+	id, body, err = t.reserve(timeout)
+
+	if err.(ConnError).IsEOF() {
+		if retryErr := t.Conn.Reconnect(); retryErr == nil {
+			return t.Reserve(timeout)
+		}
+	}
+	return
 }
