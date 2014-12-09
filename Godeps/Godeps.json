@@ -1,0 +1,5 @@
+{
+	"ImportPath": "github.com/launchdarkly/beanstalk",
+	"GoVersion": "go1.3.3",
+	"Deps": []
+}
