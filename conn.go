@@ -74,6 +74,9 @@ func (c *Conn) Reconnect() (err error) {
 		fmt.Println("Attempting to reconnect to beanstalk")
 		if c.c, err = textproto.Dial(c.network, c.addr); err == nil {
 			fmt.Println("Reconnecting to beanstalk")
+			c.TubeSet = *NewTubeSet(c, "default")
+			c.used = "default"
+			c.watched = map[string]bool{"default": true}
 			break
 		} else {
 			time.Sleep(connectRetryDelay)
