@@ -198,7 +198,7 @@ func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
 	}
 	_, err = c.readResp(r, false, "RELEASED")
 	return err
-}
+} // TODO
 
 // Bury places the given job in a holding area in the job's tube and
 // sets its priority to pri. The job will not be scheduled again until it
@@ -210,7 +210,7 @@ func (c *Conn) Bury(id uint64, pri uint32) error {
 	}
 	_, err = c.readResp(r, false, "BURIED")
 	return err
-}
+} // TODO
 
 // Touch resets the reservation timer for the given job.
 // It is an error if the job isn't currently reserved by c.
@@ -227,7 +227,7 @@ func (c *Conn) touch(id uint64) error {
 func (c *Conn) Touch(id uint64) error {
 	err := c.touch(id)
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.Touch(id)
 		}
@@ -247,7 +247,7 @@ func (c *Conn) peek(id uint64) (body []byte, err error) {
 func (c *Conn) Peek(id uint64) (body []byte, err error) {
 	body, err = c.peek(id)
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.Peek(id)
 		}
@@ -268,7 +268,7 @@ func (c *Conn) stats() (map[string]string, error) {
 func (c *Conn) Stats() (dict map[string]string, err error) {
 	dict, err = c.stats()
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.Stats()
 		}
@@ -289,7 +289,7 @@ func (c *Conn) statsJob(id uint64) (map[string]string, error) {
 func (c *Conn) StatsJob(id uint64) (dict map[string]string, err error) {
 	dict, err = c.statsJob(id)
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.StatsJob(id)
 		}
@@ -311,7 +311,7 @@ func (c *Conn) listTubes() ([]string, error) {
 func (c *Conn) ListTubes() (tubes []string, err error) {
 	tubes, err = c.listTubes()
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.ListTubes()
 		}

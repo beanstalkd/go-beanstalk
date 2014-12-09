@@ -30,7 +30,7 @@ func (t *Tube) put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64
 func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {
 	id, err = t.put(body, pri, delay, ttr)
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := t.Conn.Reconnect(); retryErr == nil {
 			return t.Put(body, pri, delay, ttr)
 		}
@@ -55,7 +55,7 @@ func (t *Tube) peekReady() (id uint64, body []byte, err error) {
 func (t *Tube) PeekReady() (id uint64, body []byte, err error) {
 	id, body, err = t.peekReady()
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := t.Conn.Reconnect(); retryErr == nil {
 			return t.PeekReady()
 		}
@@ -81,7 +81,7 @@ func (t *Tube) peekDelayed() (id uint64, body []byte, err error) {
 func (t *Tube) PeekDelayed() (id uint64, body []byte, err error) {
 	id, body, err = t.peekDelayed()
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := t.Conn.Reconnect(); retryErr == nil {
 			return t.PeekDelayed()
 		}
@@ -107,7 +107,7 @@ func (t *Tube) peekBuried() (id uint64, body []byte, err error) {
 func (t *Tube) PeekBuried() (id uint64, body []byte, err error) {
 	id, body, err = t.peekBuried()
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := t.Conn.Reconnect(); retryErr == nil {
 			return t.PeekBuried()
 		}
@@ -134,7 +134,7 @@ func (t *Tube) kick(bound int) (n int, err error) {
 func (t *Tube) Kick(bound int) (n int, err error) {
 	n, err = t.kick(bound)
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := t.Conn.Reconnect(); retryErr == nil {
 			return t.Kick(bound)
 		}
@@ -156,7 +156,7 @@ func (t *Tube) stats() (map[string]string, error) {
 func (t *Tube) Stats() (dict map[string]string, err error) {
 	dict, err = t.stats()
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := t.Conn.Reconnect(); retryErr == nil {
 			return t.Stats()
 		}
@@ -181,7 +181,7 @@ func (t *Tube) pause(d time.Duration) error {
 func (t *Tube) Pause(d time.Duration) (err error) {
 	err = t.pause(d)
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := t.Conn.Reconnect(); retryErr == nil {
 			return t.Pause(d)
 		}

@@ -41,7 +41,7 @@ func (t *TubeSet) reserve(timeout time.Duration) (id uint64, body []byte, err er
 func (t *TubeSet) Reserve(timeout time.Duration) (id uint64, body []byte, err error) {
 	id, body, err = t.reserve(timeout)
 
-	if err.(ConnError).IsEOF() {
+	if err != nil && err.(ConnError).IsEOF() {
 		if retryErr := t.Conn.Reconnect(); retryErr == nil {
 			return t.Reserve(timeout)
 		}
