@@ -188,30 +188,53 @@ func (c *Conn) Delete(id uint64) error {
 	return err
 }
 
-// Release tells the server to perform the following actions:
-// set the priority of the given job to pri, remove it from the list of
-// jobs reserved by c, wait delay seconds, then place the job in the
-// ready queue, which makes it available for reservation by any client.
-func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
+func (c *Conn) release(id uint64, pri uint32, delay time.Duration) error {
 	r, err := c.cmd(nil, nil, nil, "release", id, pri, dur(delay))
 	if err != nil {
 		return err
 	}
 	_, err = c.readResp(r, false, "RELEASED")
 	return err
-} // TODO
+}
 
-// Bury places the given job in a holding area in the job's tube and
-// sets its priority to pri. The job will not be scheduled again until it
-// has been kicked; see also the documentation of Kick.
-func (c *Conn) Bury(id uint64, pri uint32) error {
+// Release tells the server to perform the following actions:
+// set the priority of the given job to pri, remove it from the list of
+// jobs reserved by c, wait delay seconds, then place the job in the
+// ready queue, which makes it available for reservation by any client.
+func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
+	err := c.release(id, pri, delay)
+
+	if cerr, ok := err.(ConnError); ok && cerr.IsEOF() {
+		if retryErr := c.Reconnect(); retryErr == nil {
+			return c.Release(id, pri, delay)
+		}
+	}
+	return err
+
+}
+
+func (c *Conn) bury(id uint64, pri uint32) error {
 	r, err := c.cmd(nil, nil, nil, "bury", id, pri)
 	if err != nil {
 		return err
 	}
 	_, err = c.readResp(r, false, "BURIED")
 	return err
-} // TODO
+}
+
+// Bury places the given job in a holding area in the job's tube and
+// sets its priority to pri. The job will not be scheduled again until it
+// has been kicked; see also the documentation of Kick.
+func (c *Conn) Bury(id uint64, pri uint32) error {
+	err := c.bury(id, pri)
+
+	if cerr, ok := err.(ConnError); ok && cerr.IsEOF() {
+		if retryErr := c.Reconnect(); retryErr == nil {
+			return c.Bury(id, pri)
+		}
+	}
+	return err
+}
 
 // Touch resets the reservation timer for the given job.
 // It is an error if the job isn't currently reserved by c.
@@ -228,7 +251,7 @@ func (c *Conn) touch(id uint64) error {
 func (c *Conn) Touch(id uint64) error {
 	err := c.touch(id)
 
-	if err != nil && err.(ConnError).IsEOF() {
+	if cerr, ok := err.(ConnError); ok && cerr.IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.Touch(id)
 		}
@@ -248,7 +271,7 @@ func (c *Conn) peek(id uint64) (body []byte, err error) {
 func (c *Conn) Peek(id uint64) (body []byte, err error) {
 	body, err = c.peek(id)
 
-	if err != nil && err.(ConnError).IsEOF() {
+	if cerr, ok := err.(ConnError); ok && cerr.IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.Peek(id)
 		}
@@ -269,7 +292,7 @@ func (c *Conn) stats() (map[string]string, error) {
 func (c *Conn) Stats() (dict map[string]string, err error) {
 	dict, err = c.stats()
 
-	if err != nil && err.(ConnError).IsEOF() {
+	if cerr, ok := err.(ConnError); ok && cerr.IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.Stats()
 		}
@@ -290,7 +313,7 @@ func (c *Conn) statsJob(id uint64) (map[string]string, error) {
 func (c *Conn) StatsJob(id uint64) (dict map[string]string, err error) {
 	dict, err = c.statsJob(id)
 
-	if err != nil && err.(ConnError).IsEOF() {
+	if cerr, ok := err.(ConnError); ok && cerr.IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.StatsJob(id)
 		}
@@ -312,7 +335,7 @@ func (c *Conn) listTubes() ([]string, error) {
 func (c *Conn) ListTubes() (tubes []string, err error) {
 	tubes, err = c.listTubes()
 
-	if err != nil && err.(ConnError).IsEOF() {
+	if cerr, ok := err.(ConnError); ok && cerr.IsEOF() {
 		if retryErr := c.Reconnect(); retryErr == nil {
 			return c.ListTubes()
 		}
