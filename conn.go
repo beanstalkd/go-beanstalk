@@ -31,26 +31,53 @@ var (
 )
 
 // NewConn returns a new Conn using conn for I/O.
-func NewConn(conn io.ReadWriteCloser, tubeName string) *Conn {
+func NewConn(conn io.ReadWriteCloser) *Conn {
 	c := new(Conn)
 	c.c = textproto.NewConn(conn)
+	c.Tube = Tube{c, "default"}
+	c.TubeSet = *NewTubeSet(c, "default")
+	c.used = "default"
+	c.watched = map[string]bool{"default": true}
+	return c
+}
+
+func (c *Conn) ApplyTube(tubeName string) *Conn {
+	c.UseTube(tubeName)
+	c.WatchTube(tubeName)
+	return c
+}
+
+func (c *Conn) UseTube(tubeName string) *Conn {
 	c.Tube = Tube{c, tubeName}
-	c.TubeSet = *NewTubeSet(c, tubeName)
 	c.used = tubeName
-	c.watched = map[string]bool{tubeName: true}
 	c.printLine("use", tubeName)
+	return c
+}
+
+func (c *Conn) WatchTube(tubeName string) *Conn {
+	//c.TubeSet = *NewTubeSet(c, tubeName)
+	c.TubeSet.Name[tubeName] = true
+	c.watched[tubeName] = true
 	c.printLine("watch", tubeName)
+	return c
+}
+
+func (c *Conn) UnwatchTube(tubeName string) *Conn {
+	//c.TubeSet = *NewTubeSet(c, tubeName)
+	c.TubeSet.Name[tubeName] = false
+	c.watched[tubeName] = false
+	c.printLine("ignore", tubeName)
 	return c
 }
 
 // Dial connects to the given address on the given network using net.Dial
 // and then returns a new Conn for the connection.
-func Dial(network, addr string, tubeName string) (*Conn, error) {
+func Dial(network, addr string) (*Conn, error) {
 	c, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, err
 	}
-	return NewConn(c, tubeName), nil
+	return NewConn(c), nil
 }
 
 // Close closes the underlying network connection.
