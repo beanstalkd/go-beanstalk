@@ -38,6 +38,8 @@ func NewConn(conn io.ReadWriteCloser, tubeName string) *Conn {
 	c.TubeSet = *NewTubeSet(c, tubeName)
 	c.used = tubeName
 	c.watched = map[string]bool{tubeName: true}
+	c.printLine("use", tubeName)
+	c.printLine("watch", tubeName)
 	return c
 }
 
