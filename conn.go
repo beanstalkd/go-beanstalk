@@ -31,24 +31,24 @@ var (
 )
 
 // NewConn returns a new Conn using conn for I/O.
-func NewConn(conn io.ReadWriteCloser) *Conn {
+func NewConn(conn io.ReadWriteCloser, tubeName string) *Conn {
 	c := new(Conn)
 	c.c = textproto.NewConn(conn)
-	c.Tube = Tube{c, "default"}
-	c.TubeSet = *NewTubeSet(c, "default")
-	c.used = "default"
-	c.watched = map[string]bool{"default": true}
+	c.Tube = Tube{c, tubeName}
+	c.TubeSet = *NewTubeSet(c, tubeName)
+	c.used = tubeName
+	c.watched = map[string]bool{tubeName: true}
 	return c
 }
 
 // Dial connects to the given address on the given network using net.Dial
 // and then returns a new Conn for the connection.
-func Dial(network, addr string) (*Conn, error) {
+func Dial(network, addr string, tubeName string) (*Conn, error) {
 	c, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, err
 	}
-	return NewConn(c), nil
+	return NewConn(c, tubeName), nil
 }
 
 // Close closes the underlying network connection.
