@@ -41,33 +41,50 @@ func NewConn(conn io.ReadWriteCloser) *Conn {
 	return c
 }
 
-func (c *Conn) ApplyTube(tubeName string) *Conn {
-	c.UseTube(tubeName)
-	c.WatchTube(tubeName)
-	return c
+// ApplyTube: call UseTube and WatchTube
+func (c *Conn) ApplyTube(tubeName string) error {
+	var err error
+	if err = c.UseTube(tubeName); err != nil {
+		return err
+	}
+	err = c.WatchTube(tubeName)
+	return err
 }
 
-func (c *Conn) UseTube(tubeName string) *Conn {
+// UseTube: set tube to send data into
+func (c *Conn) UseTube(tubeName string) error {
+	var err error
+	if err = checkName(tubeName); err != nil {
+		return err
+	}
 	c.Tube = Tube{c, tubeName}
 	c.used = tubeName
 	c.printLine("use", tubeName)
-	return c
+	return err
 }
 
-func (c *Conn) WatchTube(tubeName string) *Conn {
-	//c.TubeSet = *NewTubeSet(c, tubeName)
+// WatchTube: add tubeName to listen from
+func (c *Conn) WatchTube(tubeName string) error {
+	var err error
+	if err = checkName(tubeName); err != nil {
+		return err
+	}
 	c.TubeSet.Name[tubeName] = true
 	c.watched[tubeName] = true
 	c.printLine("watch", tubeName)
-	return c
+	return err
 }
 
-func (c *Conn) UnwatchTube(tubeName string) *Conn {
-	//c.TubeSet = *NewTubeSet(c, tubeName)
+// UnwatchTube: undo WatchTube
+func (c *Conn) UnwatchTube(tubeName string) error {
+	var err error
+	if err = checkName(tubeName); err != nil {
+		return err
+	}
 	c.TubeSet.Name[tubeName] = false
 	c.watched[tubeName] = false
 	c.printLine("ignore", tubeName)
-	return c
+	return err
 }
 
 // Dial connects to the given address on the given network using net.Dial
