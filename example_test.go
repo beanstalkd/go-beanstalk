@@ -3,8 +3,6 @@ package beanstalk_test
 import (
 	"fmt"
 	"github.com/kr/beanstalk"
-	"net"
-	"testing"
 	"time"
 )
 
