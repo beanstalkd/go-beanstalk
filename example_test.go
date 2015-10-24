@@ -48,6 +48,7 @@ func Example_putOtherTube() {
 
 func Example_reuse_socket_connection() {
 
+	// Put two data: data1, data2 into mytube1.
 	master, err := beanstalk.Dial("tcp", "127.0.0.1:11300")
 	if err != nil {
 		panic(err)
@@ -63,8 +64,10 @@ func Example_reuse_socket_connection() {
 	}
 	fmt.Printf("Put two data into mytube1\n")
 
+	// Create socket connection will be reused.
 	reusedConn, _ := net.Dial("tcp", "127.0.0.1:11300")
 
+	// Consume first data1 from mytube1 and success delete it.
 	worker1Bq := beanstalk.NewConn(reusedConn)
 	worker1Bq.Tube.Name = "mytube1"
 	worker1Bq.TubeSet = *beanstalk.NewTubeSet(worker1Bq, "mytube1")
@@ -78,6 +81,8 @@ func Example_reuse_socket_connection() {
 		panic(err)
 	}
 
+	// Reuse previous connection, and try to consume empty tube --- mytube2
+	// We hope this will get nothing...but we found it will consume mytube1 data
 	worker2Bq := beanstalk.NewConn(reusedConn)
 	worker2Bq.Tube.Name = "mytube2"
 	worker2Bq.TubeSet = *beanstalk.NewTubeSet(worker2Bq, "mytube2")
