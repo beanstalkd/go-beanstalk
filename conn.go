@@ -71,6 +71,10 @@ func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interfa
 		c.c.W.Write(body)
 		c.c.W.Write(crnl)
 	}
+	err = c.ignoreWatchedTubes(ts)
+	if err != nil {
+		return req{}, err
+	}
 	err = c.c.W.Flush()
 	if err != nil {
 		return req{}, ConnError{c, op, err}
@@ -104,6 +108,17 @@ func (c *Conn) adjustTubes(t *Tube, ts *TubeSet) error {
 		c.watched = make(map[string]bool)
 		for s := range ts.Name {
 			c.watched[s] = true
+		}
+	}
+	return nil
+}
+
+func (c *Conn) ignoreWatchedTubes(ts *TubeSet) error {
+	if ts != nil {
+		for s := range c.watched {
+			if !ts.Name[s] {
+				c.printLine("ignore", s)
+			}
 		}
 	}
 	return nil
