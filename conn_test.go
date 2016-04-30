@@ -107,6 +107,18 @@ func TestBury(t *testing.T) {
 	}
 }
 
+func TestTubeKickJob(t *testing.T) {
+	c := NewConn(mock("kick-job 3\r\n", "KICKED\r\n"))
+
+	err := c.KickJob(3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDelete(t *testing.T) {
 	c := NewConn(mock("delete 1\r\n", "DELETED\r\n"))
 
