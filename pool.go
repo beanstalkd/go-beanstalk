@@ -26,6 +26,16 @@ type IConn interface {
     Stats() (map[string]string, error)
     StatsJob(uint64) (map[string]string, error)
     ListTubes() ([]string, error)
+
+    // Implemented in tube
+    Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error)
+    PeekReady() (id uint64, body []byte, err error)
+    PeekDelayed() (id uint64, body []byte, err error)
+    PeekBuried() (id uint64, body []byte, err error)
+    Kick(bound int) (n int, err error)
+    Pause(d time.Duration) error
+
+    UseTube(name string) error
 }
 
 type Pool struct {
@@ -282,6 +292,40 @@ func (pc *pooledConnection) ListTubes() ([]string, error) {
     return pc.c.ListTubes()
 }
 
+func (pc *pooledConnection) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {
+    return pc.c.Put(body, pri, delay, ttr)
+}
+
+func (pc *pooledConnection) PeekReady() (id uint64, body []byte, err error) {
+    return pc.c.PeekReady()
+}
+
+func (pc *pooledConnection) PeekDelayed() (id uint64, body []byte, err error) {
+    return pc.c.PeekDelayed()
+}
+
+func (pc *pooledConnection) PeekBuried() (id uint64, body []byte, err error) {
+    return pc.c.PeekBuried()
+}
+
+func (pc *pooledConnection) Kick(bound int) (n int, err error) {
+    return pc.c.Kick(bound)
+}
+
+func (pc *pooledConnection) Pause(d time.Duration) error {
+    return pc.c.Pause(d)
+}
+
+func (pc *pooledConnection) UseTube(name string) error {
+    c, ok := pc.c.(*Conn)
+    if !ok {
+        return errors.New("pooledConnection conn cannot assert *Conn")
+    }
+
+    c.UseTube(name)
+    return nil
+}
+
 type errorConnection struct{ err error }
 
 func (ec errorConnection) Close() (error) { return ec.err }
@@ -293,3 +337,10 @@ func (ec errorConnection) Peek(uint64) ([]byte, error) { return nil, ec.err }
 func (ec errorConnection) Stats() (map[string]string, error) { return nil, ec.err }
 func (ec errorConnection) StatsJob(uint64) (map[string]string, error) { return nil, ec.err }
 func (ec errorConnection) ListTubes() ([]string, error) { return nil, ec.err }
+func (ec errorConnection) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {return 0, ec.err}
+func (ec errorConnection) PeekReady() (id uint64, body []byte, err error) {return 0, nil, ec.err}
+func (ec errorConnection) PeekDelayed() (id uint64, body []byte, err error) {return 0, nil, ec.err}
+func (ec errorConnection) PeekBuried() (id uint64, body []byte, err error) {return 0, nil, ec.err}
+func (ec errorConnection) Kick(bound int) (n int, err error) {return 0, ec.err}
+func (ec errorConnection) Pause(d time.Duration) error {return ec.err}
+func (ec errorConnection) UseTube(name string) error {return ec.err}

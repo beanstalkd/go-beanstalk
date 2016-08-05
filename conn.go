@@ -51,6 +51,11 @@ func Dial(network, addr string) (*Conn, error) {
 	return NewConn(c), nil
 }
 
+func (c *Conn) UseTube(name string) error {
+    c.Tube = Tube{c, name}
+    return nil
+}
+
 // Close closes the underlying network connection.
 func (c *Conn) Close() error {
 	return c.c.Close()
