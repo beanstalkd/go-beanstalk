@@ -6,7 +6,7 @@ import (
 )
 
 func TestTubePut(t *testing.T) {
-	c := NewConn(mock("put 0 0 0 3\r\nfoo\r\n", "INSERTED 1\r\n"))
+	c := NewConn(mock("put 0 0 0 3\r\nfoo\r\n", "INSERTED 1\r\n"), "", "", 1, 1*time.Second)
 
 	id, err := c.Put([]byte("foo"), 0, 0, 0)
 	if err != nil {
@@ -21,7 +21,7 @@ func TestTubePut(t *testing.T) {
 }
 
 func TestTubePeekReady(t *testing.T) {
-	c := NewConn(mock("peek-ready\r\n", "FOUND 1 1\r\nx\r\n"))
+	c := NewConn(mock("peek-ready\r\n", "FOUND 1 1\r\nx\r\n"), "", "", 1, 1*time.Second)
 
 	id, body, err := c.PeekReady()
 	if err != nil {
@@ -39,7 +39,7 @@ func TestTubePeekReady(t *testing.T) {
 }
 
 func TestTubePeekDelayed(t *testing.T) {
-	c := NewConn(mock("peek-delayed\r\n", "FOUND 1 1\r\nx\r\n"))
+	c := NewConn(mock("peek-delayed\r\n", "FOUND 1 1\r\nx\r\n"), "", "", 1, 1*time.Second)
 
 	id, body, err := c.PeekDelayed()
 	if err != nil {
@@ -57,7 +57,7 @@ func TestTubePeekDelayed(t *testing.T) {
 }
 
 func TestTubePeekBuried(t *testing.T) {
-	c := NewConn(mock("peek-buried\r\n", "FOUND 1 1\r\nx\r\n"))
+	c := NewConn(mock("peek-buried\r\n", "FOUND 1 1\r\nx\r\n"), "", "", 1, 1*time.Second)
 
 	id, body, err := c.PeekBuried()
 	if err != nil {
@@ -75,7 +75,7 @@ func TestTubePeekBuried(t *testing.T) {
 }
 
 func TestTubeKick(t *testing.T) {
-	c := NewConn(mock("kick 2\r\n", "KICKED 1\r\n"))
+	c := NewConn(mock("kick 2\r\n", "KICKED 1\r\n"), "", "", 1, 1*time.Second)
 
 	n, err := c.Kick(2)
 	if err != nil {
@@ -90,7 +90,7 @@ func TestTubeKick(t *testing.T) {
 }
 
 func TestTubeStats(t *testing.T) {
-	c := NewConn(mock("stats-tube default\r\n", "OK 10\r\n---\na: ok\n\r\n"))
+	c := NewConn(mock("stats-tube default\r\n", "OK 10\r\n---\na: ok\n\r\n"), "", "", 1, 1*time.Second)
 
 	m, err := c.Tube.Stats()
 	if err != nil {
@@ -105,7 +105,7 @@ func TestTubeStats(t *testing.T) {
 }
 
 func TestTubePause(t *testing.T) {
-	c := NewConn(mock("pause-tube default 5\r\n", "PAUSED\r\n"))
+	c := NewConn(mock("pause-tube default 5\r\n", "PAUSED\r\n"), "", "", 1, 1*time.Second)
 
 	err := c.Pause(5 * time.Second)
 	if err != nil {

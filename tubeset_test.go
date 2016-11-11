@@ -6,7 +6,7 @@ import (
 )
 
 func TestTubeSetReserve(t *testing.T) {
-	c := NewConn(mock("reserve-with-timeout 1\r\n", "RESERVED 1 1\r\nx\r\n"))
+	c := NewConn(mock("reserve-with-timeout 1\r\n", "RESERVED 1 1\r\nx\r\n"), "", "", 1, 1*time.Second)
 	id, body, err := c.Reserve(time.Second)
 	if err != nil {
 		t.Fatal(err)
@@ -23,7 +23,7 @@ func TestTubeSetReserve(t *testing.T) {
 }
 
 func TestTubeSetReserveTimeout(t *testing.T) {
-	c := NewConn(mock("reserve-with-timeout 1\r\n", "TIMED_OUT\r\n"))
+	c := NewConn(mock("reserve-with-timeout 1\r\n", "TIMED_OUT\r\n"), "", "", 1, 1*time.Second)
 	_, _, err := c.Reserve(time.Second)
 	if cerr, ok := err.(ConnError); !ok {
 		t.Log(err)
