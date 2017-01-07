@@ -15,7 +15,7 @@ type Tube struct {
 // the id of the newly-created job. If delay is nonzero, the server will
 // wait the given amount of time after returning to the client and before
 // putting the job into the ready queue.
-func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {
+func (t *Tube) put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {
 	r, err := t.Conn.cmd(t, nil, body, "put", pri, dur(delay), dur(ttr))
 	if err != nil {
 		return 0, err
@@ -27,8 +27,20 @@ func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64
 	return id, nil
 }
 
+func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {
+	id, err = t.put(body, pri, delay, ttr)
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := t.Conn.Reconnect(); retryErr == nil {
+			return t.Put(body, pri, delay, ttr)
+		}
+	}
+
+	return
+}
+
 // PeekReady gets a copy of the job at the front of t's ready queue.
-func (t *Tube) PeekReady() (id uint64, body []byte, err error) {
+func (t *Tube) peekReady() (id uint64, body []byte, err error) {
 	r, err := t.Conn.cmd(t, nil, nil, "peek-ready")
 	if err != nil {
 		return 0, nil, err
@@ -40,9 +52,21 @@ func (t *Tube) PeekReady() (id uint64, body []byte, err error) {
 	return id, body, nil
 }
 
+func (t *Tube) PeekReady() (id uint64, body []byte, err error) {
+	id, body, err = t.peekReady()
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := t.Conn.Reconnect(); retryErr == nil {
+			return t.PeekReady()
+		}
+	}
+
+	return
+}
+
 // PeekDelayed gets a copy of the delayed job that is next to be
 // put in t's ready queue.
-func (t *Tube) PeekDelayed() (id uint64, body []byte, err error) {
+func (t *Tube) peekDelayed() (id uint64, body []byte, err error) {
 	r, err := t.Conn.cmd(t, nil, nil, "peek-delayed")
 	if err != nil {
 		return 0, nil, err
@@ -54,9 +78,21 @@ func (t *Tube) PeekDelayed() (id uint64, body []byte, err error) {
 	return id, body, nil
 }
 
+func (t *Tube) PeekDelayed() (id uint64, body []byte, err error) {
+	id, body, err = t.peekDelayed()
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := t.Conn.Reconnect(); retryErr == nil {
+			return t.PeekDelayed()
+		}
+	}
+
+	return
+}
+
 // PeekBuried gets a copy of the job in the holding area that would
 // be kicked next by Kick.
-func (t *Tube) PeekBuried() (id uint64, body []byte, err error) {
+func (t *Tube) peekBuried() (id uint64, body []byte, err error) {
 	r, err := t.Conn.cmd(t, nil, nil, "peek-buried")
 	if err != nil {
 		return 0, nil, err
@@ -68,10 +104,22 @@ func (t *Tube) PeekBuried() (id uint64, body []byte, err error) {
 	return id, body, nil
 }
 
+func (t *Tube) PeekBuried() (id uint64, body []byte, err error) {
+	id, body, err = t.peekBuried()
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := t.Conn.Reconnect(); retryErr == nil {
+			return t.PeekBuried()
+		}
+	}
+
+	return
+}
+
 // Kick takes up to bound jobs from the holding area and moves them into
 // the ready queue, then returns the number of jobs moved. Jobs will be
 // taken in the order in which they were last buried.
-func (t *Tube) Kick(bound int) (n int, err error) {
+func (t *Tube) kick(bound int) (n int, err error) {
 	r, err := t.Conn.cmd(t, nil, nil, "kick", bound)
 	if err != nil {
 		return 0, err
@@ -83,8 +131,20 @@ func (t *Tube) Kick(bound int) (n int, err error) {
 	return n, nil
 }
 
+func (t *Tube) Kick(bound int) (n int, err error) {
+	n, err = t.kick(bound)
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := t.Conn.Reconnect(); retryErr == nil {
+			return t.Kick(bound)
+		}
+	}
+
+	return
+}
+
 // Stats retrieves statistics about tube t.
-func (t *Tube) Stats() (map[string]string, error) {
+func (t *Tube) stats() (map[string]string, error) {
 	r, err := t.Conn.cmd(nil, nil, nil, "stats-tube", t.Name)
 	if err != nil {
 		return nil, err
@@ -93,8 +153,20 @@ func (t *Tube) Stats() (map[string]string, error) {
 	return parseDict(body), err
 }
 
+func (t *Tube) Stats() (dict map[string]string, err error) {
+	dict, err = t.stats()
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := t.Conn.Reconnect(); retryErr == nil {
+			return t.Stats()
+		}
+	}
+
+	return
+}
+
 // Pause pauses new reservations in t for time d.
-func (t *Tube) Pause(d time.Duration) error {
+func (t *Tube) pause(d time.Duration) error {
 	r, err := t.Conn.cmd(nil, nil, nil, "pause-tube", t.Name, dur(d))
 	if err != nil {
 		return err
@@ -104,4 +176,16 @@ func (t *Tube) Pause(d time.Duration) error {
 		return err
 	}
 	return nil
+}
+
+func (t *Tube) Pause(d time.Duration) (err error) {
+	err = t.pause(d)
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := t.Conn.Reconnect(); retryErr == nil {
+			return t.Pause(d)
+		}
+	}
+
+	return
 }

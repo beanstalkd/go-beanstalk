@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/textproto"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -17,27 +18,34 @@ type Conn struct {
 	c       *textproto.Conn
 	used    string
 	watched map[string]bool
+	mu      sync.Mutex // guards the connections
+	addr    string
+	network string
 	Tube
 	TubeSet
 }
 
 var (
-	space      = []byte{' '}
-	crnl       = []byte{'\r', '\n'}
-	yamlHead   = []byte{'-', '-', '-', '\n'}
-	nl         = []byte{'\n'}
-	colonSpace = []byte{':', ' '}
-	minusSpace = []byte{'-', ' '}
+	space             = []byte{' '}
+	crnl              = []byte{'\r', '\n'}
+	yamlHead          = []byte{'-', '-', '-', '\n'}
+	nl                = []byte{'\n'}
+	colonSpace        = []byte{':', ' '}
+	minusSpace        = []byte{'-', ' '}
+	connectRetries    = 120
+	connectRetryDelay = 1 * time.Second
 )
 
 // NewConn returns a new Conn using conn for I/O.
-func NewConn(conn io.ReadWriteCloser) *Conn {
+func newConn(conn io.ReadWriteCloser, network, addr string) *Conn {
 	c := new(Conn)
 	c.c = textproto.NewConn(conn)
 	c.Tube = Tube{c, "default"}
 	c.TubeSet = *NewTubeSet(c, "default")
 	c.used = "default"
 	c.watched = map[string]bool{"default": true}
+	c.network = network
+	c.addr = addr
 	return c
 }
 
@@ -48,12 +56,31 @@ func Dial(network, addr string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewConn(c), nil
+	return newConn(c, network, addr), nil
 }
 
 // Close closes the underlying network connection.
 func (c *Conn) Close() error {
 	return c.c.Close()
+}
+
+// Try to re-establish a closed connection. This will attempt to re-establish
+// for up to two minutes, so anything calling this should probably occur in a goroutine
+// or be OK with blocking
+func (c *Conn) Reconnect() (err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for i := 0; i < connectRetries; i++ {
+		if c.c, err = textproto.Dial(c.network, c.addr); err == nil {
+			c.TubeSet = *NewTubeSet(c, "default")
+			c.used = "default"
+			c.watched = map[string]bool{"default": true}
+			break
+		} else {
+			time.Sleep(connectRetryDelay)
+		}
+	}
+	return
 }
 
 func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interface{}) (req, error) {
@@ -172,7 +199,7 @@ func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
 	}
 	_, err = c.readResp(r, false, "RELEASED")
 	return err
-}
+} // TODO
 
 // Bury places the given job in a holding area in the job's tube and
 // sets its priority to pri. The job will not be scheduled again until it
@@ -184,12 +211,12 @@ func (c *Conn) Bury(id uint64, pri uint32) error {
 	}
 	_, err = c.readResp(r, false, "BURIED")
 	return err
-}
+} // TODO
 
 // Touch resets the reservation timer for the given job.
 // It is an error if the job isn't currently reserved by c.
 // See the documentation of Reserve for more details.
-func (c *Conn) Touch(id uint64) error {
+func (c *Conn) touch(id uint64) error {
 	r, err := c.cmd(nil, nil, nil, "touch", id)
 	if err != nil {
 		return err
@@ -198,8 +225,19 @@ func (c *Conn) Touch(id uint64) error {
 	return err
 }
 
+func (c *Conn) Touch(id uint64) error {
+	err := c.touch(id)
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := c.Reconnect(); retryErr == nil {
+			return c.Touch(id)
+		}
+	}
+	return err
+}
+
 // Peek gets a copy of the specified job from the server.
-func (c *Conn) Peek(id uint64) (body []byte, err error) {
+func (c *Conn) peek(id uint64) (body []byte, err error) {
 	r, err := c.cmd(nil, nil, nil, "peek", id)
 	if err != nil {
 		return nil, err
@@ -207,8 +245,19 @@ func (c *Conn) Peek(id uint64) (body []byte, err error) {
 	return c.readResp(r, true, "FOUND %d", &id)
 }
 
+func (c *Conn) Peek(id uint64) (body []byte, err error) {
+	body, err = c.peek(id)
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := c.Reconnect(); retryErr == nil {
+			return c.Peek(id)
+		}
+	}
+	return
+}
+
 // Stats retrieves global statistics from the server.
-func (c *Conn) Stats() (map[string]string, error) {
+func (c *Conn) stats() (map[string]string, error) {
 	r, err := c.cmd(nil, nil, nil, "stats")
 	if err != nil {
 		return nil, err
@@ -217,8 +266,19 @@ func (c *Conn) Stats() (map[string]string, error) {
 	return parseDict(body), err
 }
 
+func (c *Conn) Stats() (dict map[string]string, err error) {
+	dict, err = c.stats()
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := c.Reconnect(); retryErr == nil {
+			return c.Stats()
+		}
+	}
+	return
+}
+
 // StatsJob retrieves statistics about the given job.
-func (c *Conn) StatsJob(id uint64) (map[string]string, error) {
+func (c *Conn) statsJob(id uint64) (map[string]string, error) {
 	r, err := c.cmd(nil, nil, nil, "stats-job", id)
 	if err != nil {
 		return nil, err
@@ -227,15 +287,37 @@ func (c *Conn) StatsJob(id uint64) (map[string]string, error) {
 	return parseDict(body), err
 }
 
+func (c *Conn) StatsJob(id uint64) (dict map[string]string, err error) {
+	dict, err = c.statsJob(id)
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := c.Reconnect(); retryErr == nil {
+			return c.StatsJob(id)
+		}
+	}
+	return
+}
+
 // ListTubes returns the names of the tubes that currently
 // exist on the server.
-func (c *Conn) ListTubes() ([]string, error) {
+func (c *Conn) listTubes() ([]string, error) {
 	r, err := c.cmd(nil, nil, nil, "list-tubes")
 	if err != nil {
 		return nil, err
 	}
 	body, err := c.readResp(r, true, "OK")
 	return parseList(body), err
+}
+
+func (c *Conn) ListTubes() (tubes []string, err error) {
+	tubes, err = c.listTubes()
+
+	if err != nil && err.(ConnError).IsEOF() {
+		if retryErr := c.Reconnect(); retryErr == nil {
+			return c.ListTubes()
+		}
+	}
+	return
 }
 
 func scan(input, format string, a ...interface{}) error {

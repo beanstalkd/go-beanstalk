@@ -1,6 +1,10 @@
 package beanstalk
 
-import "errors"
+import (
+	"io"
+
+	"errors"
+)
 
 // ConnError records an error message from the server and the operation
 // and connection that caused it.
@@ -12,6 +16,10 @@ type ConnError struct {
 
 func (e ConnError) Error() string {
 	return e.Op + ": " + e.Err.Error()
+}
+
+func (e ConnError) IsEOF() bool {
+	return e.Err == io.EOF
 }
 
 // Error messages returned by the server.
