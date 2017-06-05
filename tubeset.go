@@ -26,14 +26,14 @@ func NewTubeSet(c *Conn, name ...string) *TubeSet {
 //
 // Typically, a client will reserve a job, perform some work, then delete
 // the job with Conn.Delete.
-func (t *TubeSet) Reserve(timeout time.Duration) (id uint64, body []byte, err error) {
+func (t *TubeSet) Reserve(timeout time.Duration) (id string, body []byte, err error) {
 	r, err := t.Conn.cmd(nil, t, nil, "reserve-with-timeout", dur(timeout))
 	if err != nil {
-		return 0, nil, err
+		return "", nil, err
 	}
-	body, err = t.Conn.readResp(r, true, "RESERVED %d", &id)
+	body, err = t.Conn.readResp(r, true, "RESERVED %s", &id)
 	if err != nil {
-		return 0, nil, err
+		return "", nil, err
 	}
 	return id, body, nil
 }
