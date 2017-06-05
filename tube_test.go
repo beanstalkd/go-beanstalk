@@ -12,7 +12,7 @@ func TestTubePut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id != 1 {
+	if id != "1" {
 		t.Fatal("expected 1, got", id)
 	}
 	if err = c.Close(); err != nil {
@@ -27,7 +27,7 @@ func TestTubePeekReady(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id != 1 {
+	if id != "1" {
 		t.Fatal("expected 1, got", id)
 	}
 	if len(body) != 1 || body[0] != 'x' {
@@ -45,7 +45,7 @@ func TestTubePeekDelayed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id != 1 {
+	if id != "1" {
 		t.Fatal("expected 1, got", id)
 	}
 	if len(body) != 1 || body[0] != 'x' {
@@ -63,7 +63,7 @@ func TestTubePeekBuried(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id != 1 {
+	if id != "1" {
 		t.Fatal("expected 1, got", id)
 	}
 	if len(body) != 1 || body[0] != 'x' {

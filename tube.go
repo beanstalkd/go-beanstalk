@@ -15,55 +15,55 @@ type Tube struct {
 // the id of the newly-created job. If delay is nonzero, the server will
 // wait the given amount of time after returning to the client and before
 // putting the job into the ready queue.
-func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {
+func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id string, err error) {
 	r, err := t.Conn.cmd(t, nil, body, "put", pri, dur(delay), dur(ttr))
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	_, err = t.Conn.readResp(r, false, "INSERTED %d", &id)
+	_, err = t.Conn.readResp(r, false, "INSERTED %s", &id)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	return id, nil
 }
 
 // PeekReady gets a copy of the job at the front of t's ready queue.
-func (t *Tube) PeekReady() (id uint64, body []byte, err error) {
+func (t *Tube) PeekReady() (id string, body []byte, err error) {
 	r, err := t.Conn.cmd(t, nil, nil, "peek-ready")
 	if err != nil {
-		return 0, nil, err
+		return "", nil, err
 	}
-	body, err = t.Conn.readResp(r, true, "FOUND %d", &id)
+	body, err = t.Conn.readResp(r, true, "FOUND %s", &id)
 	if err != nil {
-		return 0, nil, err
+		return "", nil, err
 	}
 	return id, body, nil
 }
 
 // PeekDelayed gets a copy of the delayed job that is next to be
 // put in t's ready queue.
-func (t *Tube) PeekDelayed() (id uint64, body []byte, err error) {
+func (t *Tube) PeekDelayed() (id string, body []byte, err error) {
 	r, err := t.Conn.cmd(t, nil, nil, "peek-delayed")
 	if err != nil {
-		return 0, nil, err
+		return "", nil, err
 	}
-	body, err = t.Conn.readResp(r, true, "FOUND %d", &id)
+	body, err = t.Conn.readResp(r, true, "FOUND %s", &id)
 	if err != nil {
-		return 0, nil, err
+		return "", nil, err
 	}
 	return id, body, nil
 }
 
 // PeekBuried gets a copy of the job in the holding area that would
 // be kicked next by Kick.
-func (t *Tube) PeekBuried() (id uint64, body []byte, err error) {
+func (t *Tube) PeekBuried() (id string, body []byte, err error) {
 	r, err := t.Conn.cmd(t, nil, nil, "peek-buried")
 	if err != nil {
-		return 0, nil, err
+		return "", nil, err
 	}
-	body, err = t.Conn.readResp(r, true, "FOUND %d", &id)
+	body, err = t.Conn.readResp(r, true, "FOUND %s", &id)
 	if err != nil {
-		return 0, nil, err
+		return "", nil, err
 	}
 	return id, body, nil
 }
