@@ -24,7 +24,7 @@ type mockIO struct {
 	send *strings.Reader
 }
 
-func mock(recv, send string) readWriteCloserTimeout {
+func mock(recv, send string) ReadWriteCloserTimeout {
 	return &mockIO{strings.NewReader(recv), strings.NewReader(send)}
 }
 
