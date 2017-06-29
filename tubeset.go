@@ -27,9 +27,6 @@ func NewTubeSet(c *Conn, name ...string) *TubeSet {
 // Typically, a client will reserve a job, perform some work, then delete
 // the job with Conn.Delete.
 func (t *TubeSet) Reserve(timeout time.Duration) (id uint64, body []byte, err error) {
-	//Add 10s grace period after timeout before connection read timesout.
-	readTimeout := t.Conn.readTimeout + timeout
-	t.Conn.netConn.SetReadDeadline(time.Now().Add(readTimeout))
 	r, err := t.Conn.cmd(nil, t, nil, "reserve-with-timeout", dur(timeout))
 	if err != nil {
 		return 0, nil, err

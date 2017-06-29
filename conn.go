@@ -148,6 +148,9 @@ func (c *Conn) printLine(cmd string, args ...interface{}) {
 }
 
 func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body []byte, err error) {
+	//Set read timeout before network read operation.
+	c.netConn.SetReadDeadline(time.Now().Add(c.readTimeout))
+
 	c.c.StartResponse(r.id)
 	defer c.c.EndResponse(r.id)
 	line, err := c.c.ReadLine()
