@@ -15,6 +15,7 @@ import (
 // documentation of those types for details.
 type Conn struct {
 	c       *textproto.Conn
+	netConn net.Conn
 	used    string
 	watched map[string]bool
 	Tube
@@ -31,9 +32,10 @@ var (
 )
 
 // NewConn returns a new Conn using conn for I/O.
-func NewConn(conn io.ReadWriteCloser) *Conn {
+func NewConn(conn net.Conn) *Conn {
 	c := new(Conn)
 	c.c = textproto.NewConn(conn)
+	c.netConn = conn //Save raw net conn for setting timeouts.
 	c.Tube = Tube{c, "default"}
 	c.TubeSet = *NewTubeSet(c, "default")
 	c.used = "default"
