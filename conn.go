@@ -14,10 +14,11 @@ import (
 // connection. The embedded types carry methods with them; see the
 // documentation of those types for details.
 type Conn struct {
-	c       *textproto.Conn
-	netConn ReadWriteCloserTimeout
-	used    string
-	watched map[string]bool
+	c           *textproto.Conn
+	netConn     ReadWriteCloserTimeout
+	readTimeout time.Duration
+	used        string
+	watched     map[string]bool
 	Tube
 	TubeSet
 }
@@ -49,6 +50,7 @@ func NewConn(conn ReadWriteCloserTimeout) *Conn {
 	c.TubeSet = *NewTubeSet(c, "default")
 	c.used = "default"
 	c.watched = map[string]bool{"default": true}
+	c.readTimeout = time.Duration(10) * time.Second //Sensible default read timeout.
 	return c
 }
 
@@ -70,6 +72,11 @@ func DialTimeout(network, addr string, timeout time.Duration) (*Conn, error) {
 		return nil, err
 	}
 	return NewConn(c), nil
+}
+
+// SetReadTimeout sets the timeout duration for network read operations.
+func (c *Conn) SetReadTimeout(timeout time.Duration) {
+	c.readTimeout = timeout
 }
 
 // Close closes the underlying network connection.
