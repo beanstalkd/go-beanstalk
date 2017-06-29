@@ -14,11 +14,12 @@ import (
 // connection. The embedded types carry methods with them; see the
 // documentation of those types for details.
 type Conn struct {
-	c           *textproto.Conn
-	netConn     ReadWriteCloserTimeout
-	readTimeout time.Duration
-	used        string
-	watched     map[string]bool
+	c              *textproto.Conn
+	netConn        ReadWriteCloserTimeout
+	readTimeout    time.Duration
+	reserveTimeout time.Duration
+	used           string
+	watched        map[string]bool
 	Tube
 	TubeSet
 }
@@ -148,16 +149,19 @@ func (c *Conn) printLine(cmd string, args ...interface{}) {
 }
 
 func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body []byte, err error) {
-	//Set read timeout before network read operation if operation isn't reserve-with-timeout.
-	//reserve-with-timeout commands set their own special timeout.
-	if r.op != "reserve-with-timeout" {
-		c.netConn.SetReadDeadline(time.Now().Add(c.readTimeout))
+	readTimeout := c.reserveTimeout
+	//For reserve-with-timeout commands, add reserve time to read timeout.
+	if r.op == "reserve-with-timeout" {
+		readTimeout = c.readTimeout + c.reserveTimeout
 	}
 
 	c.c.StartResponse(r.id)
 	defer c.c.EndResponse(r.id)
+	c.netConn.SetReadDeadline(time.Now().Add(readTimeout))
 	line, err := c.c.ReadLine()
+
 	for strings.HasPrefix(line, "WATCHING ") || strings.HasPrefix(line, "USING ") {
+		c.netConn.SetReadDeadline(time.Now().Add(readTimeout))
 		line, err = c.c.ReadLine()
 	}
 	if err != nil {
@@ -171,6 +175,7 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 			return nil, ConnError{c, r.op, err}
 		}
 		body = make([]byte, size+2) // include trailing CR NL
+		c.netConn.SetReadDeadline(time.Now().Add(c.readTimeout))
 		_, err = io.ReadFull(c.c.R, body)
 		if err != nil {
 			return nil, ConnError{c, r.op, err}
