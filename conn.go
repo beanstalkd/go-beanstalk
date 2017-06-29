@@ -149,7 +149,7 @@ func (c *Conn) printLine(cmd string, args ...interface{}) {
 }
 
 func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body []byte, err error) {
-	readTimeout := c.reserveTimeout
+	readTimeout := c.readTimeout
 	//For reserve-with-timeout commands, add reserve time to read timeout.
 	if r.op == "reserve-with-timeout" {
 		readTimeout = c.readTimeout + c.reserveTimeout
@@ -159,7 +159,6 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 	defer c.c.EndResponse(r.id)
 	c.netConn.SetReadDeadline(time.Now().Add(readTimeout))
 	line, err := c.c.ReadLine()
-
 	for strings.HasPrefix(line, "WATCHING ") || strings.HasPrefix(line, "USING ") {
 		c.netConn.SetReadDeadline(time.Now().Add(readTimeout))
 		line, err = c.c.ReadLine()
