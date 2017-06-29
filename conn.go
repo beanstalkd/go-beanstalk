@@ -44,7 +44,8 @@ func NewConn(conn io.ReadWriteCloser) *Conn {
 // Dial connects to the given address on the given network using net.Dial
 // and then returns a new Conn for the connection.
 func Dial(network, addr string) (*Conn, error) {
-	c, err := net.Dial(network, addr)
+	connTimeout := time.Duration(10) * time.Second
+	c, err := net.DialTimeout(network, addr, connTimeout)
 	if err != nil {
 		return nil, err
 	}
