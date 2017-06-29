@@ -15,14 +15,16 @@ import (
 // documentation of those types for details.
 type Conn struct {
 	c       *textproto.Conn
-	netConn netConn
+	netConn readWriteCloserTimeout
 	used    string
 	watched map[string]bool
 	Tube
 	TubeSet
 }
 
-type netConn interface {
+// ReadWriteCloserTimeout includes the io.Reader and io.Writer, but also adds the timeout
+// functions from net.Conn
+type readWriteCloserTimeout interface {
 	io.Reader
 	io.Writer
 	io.Closer
@@ -39,7 +41,7 @@ var (
 )
 
 // NewConn returns a new Conn using conn for I/O.
-func NewConn(conn netConn) *Conn {
+func NewConn(conn readWriteCloserTimeout) *Conn {
 	c := new(Conn)
 	c.c = textproto.NewConn(conn)
 	c.netConn = conn //Save raw net conn for setting timeouts.
