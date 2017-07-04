@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+//DefaultConnTimeout time in seconds to wait for connection to beanstalk server.
+const DefaultConnTimeout = 10
+
+//DefaultReadTimeout time in seconds to wait for response from beanstalk server.
+const DefaultReadTimeout = 10
+
 // A Conn represents a connection to a beanstalkd server. It consists
 // of a default Tube and TubeSet as well as the underlying network
 // connection. The embedded types carry methods with them; see the
@@ -51,21 +57,19 @@ func NewConn(conn ReadWriteCloserTimeout) *Conn {
 	c.TubeSet = *NewTubeSet(c, "default")
 	c.used = "default"
 	c.watched = map[string]bool{"default": true}
-	c.readTimeout = time.Duration(10) * time.Second //Sensible default read timeout.
+	c.readTimeout = time.Duration(DefaultReadTimeout) * time.Second
 	return c
 }
 
-// Dial connects to the given address on the given network using net.Dial
-// and then returns a new Conn for the connection.
+// Dial connects to the given address on the given network using net.DialTimeout
+// with a default timeout of 10s and then returns a new Conn for the connection.
 func Dial(network, addr string) (*Conn, error) {
-	c, err := net.Dial(network, addr)
-	if err != nil {
-		return nil, err
-	}
-	return NewConn(c), nil
+	connTimeout := time.Duration(DefaultConnTimeout) * time.Second
+	return DialTimeout(network, addr, connTimeout)
 }
 
-// Dial connects to the given address on the given network using net.DialTimeout
+// DialTimeout connects to the given address on the given network using
+// net.DialTimeout with a supplied timeout
 // and then returns a new Conn for the connection.
 func DialTimeout(network, addr string, timeout time.Duration) (*Conn, error) {
 	c, err := net.DialTimeout(network, addr, timeout)
