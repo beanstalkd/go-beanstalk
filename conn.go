@@ -232,6 +232,16 @@ func (c *Conn) StatsJob(id uint64) (map[string]string, error) {
 	return parseDict(body), err
 }
 
+// StatsTube retrieves statistics about the given tube.
+func (c *Conn) StatsTube(name string) (map[string]string, error) {
+	r, err := c.cmd(nil, nil, nil, "stats-tube", name)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.readResp(r, true, "OK")
+	return parseDict(body), err
+}
+
 // ListTubes returns the names of the tubes that currently
 // exist on the server.
 func (c *Conn) ListTubes() ([]string, error) {

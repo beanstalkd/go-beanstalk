@@ -25,6 +25,7 @@ type IConn interface {
     Peek(uint64) ([]byte, error)
     Stats() (map[string]string, error)
     StatsJob(uint64) (map[string]string, error)
+    StatsTube(string) (map[string]string, error)
     ListTubes() ([]string, error)
 
     // Implemented in tube
@@ -288,6 +289,15 @@ func (pc *pooledConnection) StatsJob(id uint64) (map[string]string, error) {
     return pc.c.StatsJob(id)
 }
 
+func (pc *pooledConnection) StatsTube(tube string) (map[string]string, error) {
+    c, ok := pc.c.(*Conn)
+    if !ok {
+        return nil, errors.New("pooledConnection conn cannot assert *Conn")
+    }
+    tb := &Tube{Conn: c, Name: tube}
+    return tb.Stats()
+}
+
 func (pc *pooledConnection) ListTubes() ([]string, error) {
     return pc.c.ListTubes()
 }
@@ -336,6 +346,7 @@ func (ec errorConnection) Touch(uint64) (error) { return ec.err }
 func (ec errorConnection) Peek(uint64) ([]byte, error) { return nil, ec.err }
 func (ec errorConnection) Stats() (map[string]string, error) { return nil, ec.err }
 func (ec errorConnection) StatsJob(uint64) (map[string]string, error) { return nil, ec.err }
+func (ec errorConnection) StatsTube(string) (map[string]string, error) { return nil, ec.err }
 func (ec errorConnection) ListTubes() ([]string, error) { return nil, ec.err }
 func (ec errorConnection) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {return 0, ec.err}
 func (ec errorConnection) PeekReady() (id uint64, body []byte, err error) {return 0, nil, ec.err}
