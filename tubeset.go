@@ -11,6 +11,13 @@ type TubeSet struct {
 	Name map[string]bool
 }
 
+// TSI is a TubeSet Interface
+type TSI interface {
+	Delete(id uint64) error
+	PeekReady() (id uint64, body []byte, err error)
+	Reserve(timeout time.Duration) (id uint64, body []byte, err error)
+}
+
 // NewTubeSet returns a new TubeSet representing the given names.
 func NewTubeSet(c *Conn, name ...string) *TubeSet {
 	ts := &TubeSet{c, make(map[string]bool)}
