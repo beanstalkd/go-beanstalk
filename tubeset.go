@@ -14,7 +14,6 @@ type TubeSet struct {
 // TSI is a TubeSet Interface
 type TSI interface {
 	Delete(id uint64) error
-	PeekReady() (id uint64, body []byte, err error)
 	Reserve(timeout time.Duration) (id uint64, body []byte, err error)
 }
 
@@ -43,4 +42,9 @@ func (t *TubeSet) Reserve(timeout time.Duration) (id uint64, body []byte, err er
 		return 0, nil, err
 	}
 	return id, body, nil
+}
+
+// Delete deletes the given job.
+func (t *TubeSet) Delete(id uint64) error {
+	return t.Conn.Delete(id)
 }
