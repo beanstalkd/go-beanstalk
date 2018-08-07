@@ -66,7 +66,7 @@ func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interfa
 	if body != nil {
 		args = append(args, len(body))
 	}
-	c.printLine(string(op), args...)
+	c.printLine(op, args...)
 	if body != nil {
 		c.c.W.Write(body)
 		c.c.W.Write(crnl)
@@ -210,6 +210,16 @@ func (c *Conn) Peek(id uint64) (body []byte, err error) {
 // Stats retrieves global statistics from the server.
 func (c *Conn) Stats() (map[string]string, error) {
 	r, err := c.cmd(nil, nil, nil, "stats")
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.readResp(r, true, "OK")
+	return parseDict(body), err
+}
+
+// StatsTube retrieves specific tube statistics from the server.
+func (c *Conn) StatsTube(tube string) (map[string]string, error) {
+	r, err := c.cmd(nil, nil, nil, "stats-tube", tube)
 	if err != nil {
 		return nil, err
 	}
