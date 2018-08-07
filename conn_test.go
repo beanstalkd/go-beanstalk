@@ -202,6 +202,21 @@ func TestStats(t *testing.T) {
 	}
 }
 
+func TestStatsTube(t *testing.T) {
+	c := NewConn(mock("stats-tube tubename\r\n", "OK 10\r\n---\na: ok\n\r\n"))
+
+	m, err := c.StatsTube("tubename")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(m) != 1 || m["a"] != "ok" {
+		t.Fatalf("expected %#v, got %#v", map[string]string{"a": "ok"}, m)
+	}
+	if err = c.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestStatsJob(t *testing.T) {
 	c := NewConn(mock("stats-job 1\r\n", "OK 10\r\n---\na: ok\n\r\n"))
 
