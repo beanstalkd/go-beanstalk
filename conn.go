@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-//DefaultConnTimeout time in seconds to wait for connection to beanstalk server.
+// DefaultConnTimeout time in seconds to wait for connection to beanstalk server.
 const DefaultConnTimeout = 10
 
-//DefaultReadTimeout time in seconds to wait for response from beanstalk server.
+// DefaultReadTimeout time in seconds to wait for response from beanstalk server.
 const DefaultReadTimeout = 10
 
 // A Conn represents a connection to a beanstalkd server. It consists
@@ -65,14 +65,7 @@ func NewConn(conn ReadWriteCloserTimeout) *Conn {
 // with a default timeout of 10s and then returns a new Conn for the connection.
 func Dial(network, addr string) (*Conn, error) {
 	connTimeout := time.Duration(DefaultConnTimeout) * time.Second
-	return DialTimeout(network, addr, connTimeout)
-}
-
-// DialTimeout connects to the given address on the given network using
-// net.DialTimeout with a supplied timeout
-// and then returns a new Conn for the connection.
-func DialTimeout(network, addr string, timeout time.Duration) (*Conn, error) {
-	c, err := net.DialTimeout(network, addr, timeout)
+	c, err := net.DialTimeout(network, addr, connTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +147,7 @@ func (c *Conn) printLine(cmd string, args ...interface{}) {
 
 func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body []byte, err error) {
 	readTimeout := c.readTimeout
-	//For reserve-with-timeout commands, add reserve time to read timeout.
+	// For reserve-with-timeout commands, add reserve time to read timeout.
 	if r.op == "reserve-with-timeout" {
 		readTimeout = c.readTimeout + c.reserveTimeout
 	}
