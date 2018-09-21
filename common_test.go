@@ -2,6 +2,7 @@ package beanstalk
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"time"
 )
@@ -24,7 +25,7 @@ type mockIO struct {
 	send *strings.Reader
 }
 
-func mock(recv, send string) ReadWriteCloserTimeout {
+func mock(recv, send string) io.ReadWriteCloser {
 	return &mockIO{strings.NewReader(recv), strings.NewReader(send)}
 }
 
