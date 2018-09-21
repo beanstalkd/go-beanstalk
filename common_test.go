@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 )
 
 type mockError struct {
@@ -27,10 +26,6 @@ type mockIO struct {
 
 func mock(recv, send string) io.ReadWriteCloser {
 	return &mockIO{strings.NewReader(recv), strings.NewReader(send)}
-}
-
-func (m mockIO) SetReadDeadline(t time.Time) error {
-	return nil
 }
 
 func (m mockIO) Read(b []byte) (int, error) {
