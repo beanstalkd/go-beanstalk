@@ -12,31 +12,19 @@ import (
 // DefaultConnTimeout time in seconds to wait for connection to beanstalk server.
 const DefaultConnTimeout = 10
 
-// DefaultReadTimeout time in seconds to wait for response from beanstalk server.
-const DefaultReadTimeout = 10
+// DefaultKeepAliveTimeout time in seconds to send TCP keepalive messages.
+const DefaultKeepAliveTimeout = 10
 
 // A Conn represents a connection to a beanstalkd server. It consists
 // of a default Tube and TubeSet as well as the underlying network
 // connection. The embedded types carry methods with them; see the
 // documentation of those types for details.
 type Conn struct {
-	c              *textproto.Conn
-	netConn        ReadWriteCloserTimeout
-	readTimeout    time.Duration
-	reserveTimeout time.Duration
-	used           string
-	watched        map[string]bool
+	c       *textproto.Conn
+	used    string
+	watched map[string]bool
 	Tube
 	TubeSet
-}
-
-// ReadWriteCloserTimeout includes the io.Reader and io.Writer, but also adds the timeout
-// functions from net.Conn
-type ReadWriteCloserTimeout interface {
-	io.Reader
-	io.Writer
-	io.Closer
-	SetReadDeadline(t time.Time) error
 }
 
 var (
@@ -49,15 +37,13 @@ var (
 )
 
 // NewConn returns a new Conn using conn for I/O.
-func NewConn(conn ReadWriteCloserTimeout) *Conn {
+func NewConn(conn io.ReadWriteCloser) *Conn {
 	c := new(Conn)
 	c.c = textproto.NewConn(conn)
-	c.netConn = conn //Save raw net conn for setting timeouts.
 	c.Tube = Tube{c, "default"}
 	c.TubeSet = *NewTubeSet(c, "default")
 	c.used = "default"
 	c.watched = map[string]bool{"default": true}
-	c.readTimeout = time.Duration(DefaultReadTimeout) * time.Second
 	return c
 }
 
@@ -69,12 +55,10 @@ func Dial(network, addr string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	tcpConn, _ := c.(*net.TCPConn)
+	tcpConn.SetKeepAlive(true)
+	tcpConn.SetKeepAlivePeriod(DefaultKeepAliveTimeout * time.Second)
 	return NewConn(c), nil
-}
-
-// SetReadTimeout sets the timeout duration for network read operations.
-func (c *Conn) SetReadTimeout(timeout time.Duration) {
-	c.readTimeout = timeout
 }
 
 // Close closes the underlying network connection.
@@ -146,18 +130,10 @@ func (c *Conn) printLine(cmd string, args ...interface{}) {
 }
 
 func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body []byte, err error) {
-	readTimeout := c.readTimeout
-	// For reserve-with-timeout commands, add reserve time to read timeout.
-	if r.op == "reserve-with-timeout" {
-		readTimeout = c.readTimeout + c.reserveTimeout
-	}
-
 	c.c.StartResponse(r.id)
 	defer c.c.EndResponse(r.id)
-	c.netConn.SetReadDeadline(time.Now().Add(readTimeout))
 	line, err := c.c.ReadLine()
 	for strings.HasPrefix(line, "WATCHING ") || strings.HasPrefix(line, "USING ") {
-		c.netConn.SetReadDeadline(time.Now().Add(readTimeout))
 		line, err = c.c.ReadLine()
 	}
 	if err != nil {
@@ -171,7 +147,6 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 			return nil, ConnError{c, r.op, err}
 		}
 		body = make([]byte, size+2) // include trailing CR NL
-		c.netConn.SetReadDeadline(time.Now().Add(c.readTimeout))
 		_, err = io.ReadFull(c.c.R, body)
 		if err != nil {
 			return nil, ConnError{c, r.op, err}
