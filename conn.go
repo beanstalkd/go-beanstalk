@@ -55,9 +55,11 @@ func Dial(network, addr string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	tcpConn, _ := c.(*net.TCPConn)
-	tcpConn.SetKeepAlive(true)
-	tcpConn.SetKeepAlivePeriod(DefaultKeepAliveTimeout * time.Second)
+	tcpConn, ok := c.(*net.TCPConn)
+	if ok {
+		tcpConn.SetKeepAlive(true)
+		tcpConn.SetKeepAlivePeriod(DefaultKeepAliveTimeout * time.Second)
+	}
 	return NewConn(c), nil
 }
 
