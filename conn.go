@@ -51,7 +51,14 @@ func NewConn(conn io.ReadWriteCloser) *Conn {
 // with a default timeout of 10s and then returns a new Conn for the connection.
 func Dial(network, addr string) (*Conn, error) {
 	connTimeout := time.Duration(DefaultConnTimeout) * time.Second
-	c, err := net.DialTimeout(network, addr, connTimeout)
+	return DialTimeout(network, addr, connTimeout)
+}
+
+// DialTimeout connects to the given address on the given network using
+// net.DialTimeout with a supplied timeout
+// and then returns a new Conn for the connection.
+func DialTimeout(network, addr string, timeout time.Duration) (*Conn, error) {
+	c, err := net.DialTimeout(network, addr, timeout)
 	if err != nil {
 		return nil, err
 	}
