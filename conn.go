@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+// DefaultDialTimeout is the time to wait for a connection to the beanstalk server.
+const DefaultDialTimeout = 10 * time.Second
+
+// DefaultKeepAlivePeriod is the default period between TCP keepalive messages.
+const DefaultKeepAlivePeriod = 10 * time.Second
+
 // A Conn represents a connection to a beanstalkd server. It consists
 // of a default Tube and TubeSet as well as the underlying network
 // connection. The embedded types carry methods with them; see the
@@ -41,10 +47,20 @@ func NewConn(conn io.ReadWriteCloser) *Conn {
 	return c
 }
 
-// Dial connects to the given address on the given network using net.Dial
-// and then returns a new Conn for the connection.
+// Dial connects addr on the given network using net.DialTimeout
+// with a default timeout of 10s and then returns a new Conn for the connection.
 func Dial(network, addr string) (*Conn, error) {
-	c, err := net.Dial(network, addr)
+	return DialTimeout(network, addr, DefaultDialTimeout)
+}
+
+// DialTimeout connects addr on the given network using net.DialTimeout
+// with a supplied timeout and then returns a new Conn for the connection.
+func DialTimeout(network, addr string, timeout time.Duration) (*Conn, error) {
+	dialer := &net.Dialer{
+		Timeout:   timeout,
+		KeepAlive: DefaultKeepAlivePeriod,
+	}
+	c, err := dialer.Dial(network, addr)
 	if err != nil {
 		return nil, err
 	}
