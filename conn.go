@@ -202,6 +202,17 @@ func (c *Conn) Bury(id uint64, pri uint32) error {
 	return err
 }
 
+// KickJob places the given job to the ready queue of the same tube where it currently belongs
+// when the given job id exists and is in a buried or delayed state.
+func (c *Conn) KickJob(id uint64) error {
+	r, err := c.cmd(nil, nil, nil, "kick-job", id)
+	if err != nil {
+		return err
+	}
+	_, err = c.readResp(r, false, "KICKED")
+	return err
+}
+
 // Touch resets the reservation timer for the given job.
 // It is an error if the job isn't currently reserved by c.
 // See the documentation of Reserve for more details.
