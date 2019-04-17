@@ -1,6 +1,7 @@
 package beanstalk
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -20,11 +21,19 @@ func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64
 	if err != nil {
 		return 0, err
 	}
-	_, err = t.Conn.readResp(r, false, "INSERTED %d", &id)
+	var header string
+	header, _, err = t.Conn.readRawResp(r, false)
 	if err != nil {
 		return 0, err
 	}
-	return id, nil
+	_, err = fmt.Sscanf(header, "INSERTED %d", &id)
+	if err != nil {
+		err = scan(header, "BURIED %d", &id)
+		if err == nil {
+			err = ConnError{t.Conn, r.op, ErrBuried}
+		}
+	}
+	return id, err
 }
 
 // PeekReady gets a copy of the job at the front of t's ready queue.

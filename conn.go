@@ -135,7 +135,7 @@ func (c *Conn) printLine(cmd string, args ...interface{}) {
 	c.c.W.Write(crnl)
 }
 
-func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body []byte, err error) {
+func (c *Conn) readRawResp(r req, readBody bool) (header string, body []byte, err error) {
 	c.c.StartResponse(r.id)
 	defer c.c.EndResponse(r.id)
 	line, err := c.c.ReadLine()
@@ -143,24 +143,31 @@ func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) (body 
 		line, err = c.c.ReadLine()
 	}
 	if err != nil {
-		return nil, ConnError{c, r.op, err}
+		return "", nil, ConnError{c, r.op, err}
 	}
-	toScan := line
+	header = line
 	if readBody {
 		var size int
-		toScan, size, err = parseSize(toScan)
+		header, size, err = parseSize(header)
 		if err != nil {
-			return nil, ConnError{c, r.op, err}
+			return "", nil, ConnError{c, r.op, err}
 		}
 		body = make([]byte, size+2) // include trailing CR NL
 		_, err = io.ReadFull(c.c.R, body)
 		if err != nil {
-			return nil, ConnError{c, r.op, err}
+			return header, nil, ConnError{c, r.op, err}
 		}
 		body = body[:size] // exclude trailing CR NL
 	}
+	return
+}
 
-	err = scan(toScan, f, a...)
+func (c *Conn) readResp(r req, readBody bool, f string, a ...interface{}) ([]byte, error) {
+	header, body, err := c.readRawResp(r, readBody)
+	if err != nil {
+		return nil, err
+	}
+	err = scan(header, f, a...)
 	if err != nil {
 		return nil, ConnError{c, r.op, err}
 	}

@@ -20,6 +20,24 @@ func TestTubePut(t *testing.T) {
 	}
 }
 
+func TestTubePutBuried(t *testing.T) {
+	c := NewConn(mock("put 0 0 0 3\r\nfoo\r\n", "BURIED 7\r\n"))
+
+	id, err := c.Put([]byte("foo"), 0, 0, 0)
+	if err == nil {
+		t.Fatal("error expected")
+	}
+	if e, ok := err.(ConnError); !ok || e.Err != ErrBuried {
+		t.Fatal("expected ErrBuried, got", err)
+	}
+	if id != 7 {
+		t.Fatal("expected 7, got", id)
+	}
+	if err = c.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestTubePeekReady(t *testing.T) {
 	c := NewConn(mock("peek-ready\r\n", "FOUND 1 1\r\nx\r\n"))
 
