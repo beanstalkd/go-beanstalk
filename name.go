@@ -18,6 +18,10 @@ func (e NameError) Error() string {
 	return e.Err.Error() + ": " + e.Name
 }
 
+func (e NameError) Unwrap() error {
+	return e.Err
+}
+
 // Name format errors. The Err field of NameError contains one of these.
 var (
 	ErrEmpty   = errors.New("name is empty")
