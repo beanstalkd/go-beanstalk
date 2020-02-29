@@ -83,7 +83,7 @@ func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interfa
 	if body != nil {
 		args = append(args, len(body))
 	}
-	c.printLine(string(op), args...)
+	c.printLine(op, args...)
 	if body != nil {
 		c.c.W.Write(body)
 		c.c.W.Write(crnl)
