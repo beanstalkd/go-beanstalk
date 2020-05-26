@@ -8,7 +8,7 @@ import (
 func TestNameTooLong(t *testing.T) {
 	c := NewConn(mock("", ""))
 
-	tube := Tube{c, string(make([]byte, 201))}
+	tube := NewTube(c, string(make([]byte, 201)))
 	_, err := tube.Put([]byte("foo"), 0, 0, 0)
 	if e, ok := err.(NameError); !ok || e.Err != ErrTooLong {
 		t.Fatal(err)
@@ -21,7 +21,7 @@ func TestNameTooLong(t *testing.T) {
 func TestNameEmpty(t *testing.T) {
 	c := NewConn(mock("", ""))
 
-	tube := Tube{c, ""}
+	tube := NewTube(c, "")
 	_, err := tube.Put([]byte("foo"), 0, 0, 0)
 	if e, ok := err.(NameError); !ok || e.Err != ErrEmpty {
 		t.Fatal(err)
@@ -34,7 +34,7 @@ func TestNameEmpty(t *testing.T) {
 func TestNameBadChar(t *testing.T) {
 	c := NewConn(mock("", ""))
 
-	tube := Tube{c, "*"}
+	tube := NewTube(c, "*")
 	_, err := tube.Put([]byte("foo"), 0, 0, 0)
 	if e, ok := err.(NameError); !ok || e.Err != ErrBadChar {
 		t.Fatal(err)
@@ -61,7 +61,7 @@ func TestUse(t *testing.T) {
 		"use foo\r\nput 0 0 0 5\r\nhello\r\n",
 		"USING foo\r\nINSERTED 1\r\n",
 	))
-	tube := Tube{c, "foo"}
+	tube := NewTube(c, "foo")
 	id, err := tube.Put([]byte("hello"), 0, 0, 0)
 	if err != nil {
 		t.Fatal(err)

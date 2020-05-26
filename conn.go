@@ -40,7 +40,7 @@ var (
 func NewConn(conn io.ReadWriteCloser) *Conn {
 	c := new(Conn)
 	c.c = textproto.NewConn(conn)
-	c.Tube = Tube{c, "default"}
+	c.Tube = *NewTube(c, "default")
 	c.TubeSet = *NewTubeSet(c, "default")
 	c.used = "default"
 	c.watched = map[string]bool{"default": true}
