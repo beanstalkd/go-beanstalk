@@ -182,7 +182,7 @@ func (c *Conn) Delete(id uint64) error {
 // jobs reserved by c, wait delay seconds, then place the job in the
 // ready queue, which makes it available for reservation by any client.
 func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
-	r, err := c.cmd(nil, nil, nil, "release", id, pri, dur(delay))
+	r, err := c.cmd(nil, nil, nil, "release", id, pri, dur2sec(delay))
 	if err != nil {
 		return err
 	}

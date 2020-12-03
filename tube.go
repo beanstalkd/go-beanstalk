@@ -21,7 +21,7 @@ func NewTube(c *Conn, name string) *Tube {
 // wait the given amount of time after returning to the client and before
 // putting the job into the ready queue.
 func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {
-	r, err := t.Conn.cmd(t, nil, body, "put", pri, dur(delay), dur(ttr))
+	r, err := t.Conn.cmd(t, nil, body, "put", pri, dur2sec(delay), dur2sec(ttr))
 	if err != nil {
 		return 0, err
 	}
@@ -100,7 +100,7 @@ func (t *Tube) Stats() (map[string]string, error) {
 
 // Pause pauses new reservations in t for time d.
 func (t *Tube) Pause(d time.Duration) error {
-	r, err := t.Conn.cmd(nil, nil, nil, "pause-tube", t.Name, dur(d))
+	r, err := t.Conn.cmd(nil, nil, nil, "pause-tube", t.Name, dur2sec(d))
 	if err != nil {
 		return err
 	}
