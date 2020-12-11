@@ -181,8 +181,8 @@ func (c *Conn) Delete(id uint64) error {
 // set the priority of the given job to pri, remove it from the list of
 // jobs reserved by c, wait delay seconds, then place the job in the
 // ready queue, which makes it available for reservation by any client.
-func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
-	r, err := c.cmd(nil, nil, nil, "release", id, pri, dur2sec(delay))
+func (c *Conn) Release(id uint64, pri, delaySec uint32) error {
+	r, err := c.cmd(nil, nil, nil, "release", id, pri, delaySec)
 	if err != nil {
 		return err
 	}

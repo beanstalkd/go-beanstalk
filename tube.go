@@ -1,9 +1,5 @@
 package beanstalk
 
-import (
-	"time"
-)
-
 // Tube represents tube Name on the server connected to by Conn.
 // It has methods for commands that operate on a single tube.
 type Tube struct {
@@ -20,8 +16,8 @@ func NewTube(c *Conn, name string) *Tube {
 // the id of the newly-created job. If delay is nonzero, the server will
 // wait the given amount of time after returning to the client and before
 // putting the job into the ready queue.
-func (t *Tube) Put(body []byte, pri uint32, delay, ttr time.Duration) (id uint64, err error) {
-	r, err := t.Conn.cmd(t, nil, body, "put", pri, dur2sec(delay), dur2sec(ttr))
+func (t *Tube) Put(body []byte, pri, delaySec, ttrSec uint32) (id uint64, err error) {
+	r, err := t.Conn.cmd(t, nil, body, "put", pri, delaySec, ttrSec)
 	if err != nil {
 		return 0, err
 	}
@@ -99,8 +95,8 @@ func (t *Tube) Stats() (map[string]string, error) {
 }
 
 // Pause pauses new reservations in t for time d.
-func (t *Tube) Pause(d time.Duration) error {
-	r, err := t.Conn.cmd(nil, nil, nil, "pause-tube", t.Name, dur2sec(d))
+func (t *Tube) Pause(sec uint32) error {
+	r, err := t.Conn.cmd(nil, nil, nil, "pause-tube", t.Name, sec)
 	if err != nil {
 		return err
 	}

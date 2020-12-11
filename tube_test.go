@@ -2,7 +2,6 @@ package beanstalk
 
 import (
 	"testing"
-	"time"
 )
 
 func TestTubePut(t *testing.T) {
@@ -107,7 +106,7 @@ func TestTubeStats(t *testing.T) {
 func TestTubePause(t *testing.T) {
 	c := NewConn(mock("pause-tube default 5\r\n", "PAUSED\r\n"))
 
-	err := c.Pause(5 * time.Second)
+	err := c.Pause(5)
 	if err != nil {
 		t.Fatal(err)
 	}

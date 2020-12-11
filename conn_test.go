@@ -2,7 +2,6 @@ package beanstalk
 
 import (
 	"testing"
-	"time"
 )
 
 func TestNameTooLong(t *testing.T) {
@@ -80,7 +79,7 @@ func TestWatchIgnore(t *testing.T) {
 		"WATCHING 2\r\nWATCHING 1\r\nRESERVED 1 1\r\nx\r\n",
 	))
 	ts := NewTubeSet(c, "foo")
-	id, body, err := ts.Reserve(time.Second)
+	id, body, err := ts.Reserve(1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +189,7 @@ func TestPeekTwice(t *testing.T) {
 func TestRelease(t *testing.T) {
 	c := NewConn(mock("release 1 3 2\r\n", "RELEASED\r\n"))
 
-	err := c.Release(1, 3, 2*time.Second)
+	err := c.Release(1, 3, 2)
 	if err != nil {
 		t.Fatal(err)
 	}

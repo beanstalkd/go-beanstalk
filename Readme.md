@@ -11,9 +11,9 @@ Go client for [beanstalkd](https://beanstalkd.github.io).
 Produce jobs:
 
     c, err := beanstalk.Dial("tcp", "127.0.0.1:11300")
-    id, err := c.Put([]byte("hello"), 1, 0, 120*time.Second)
+    id, err := c.Put([]byte("hello"), 1, 0, 120)
 
 Consume jobs:
 
     c, err := beanstalk.Dial("tcp", "127.0.0.1:11300")
-    id, body, err := c.Reserve(5 * time.Second)
+    id, body, err := c.Reserve(5)
