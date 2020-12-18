@@ -1,5 +1,9 @@
 package beanstalk
 
+import (
+	"time"
+)
+
 // TubeSet represents a set of tubes on the server connected to by Conn.
 // Name names the tubes represented.
 type TubeSet struct {
@@ -22,8 +26,8 @@ func NewTubeSet(c *Conn, name ...string) *TubeSet {
 //
 // Typically, a client will reserve a job, perform some work, then delete
 // the job with Conn.Delete.
-func (t *TubeSet) Reserve(timeoutSec uint32) (id uint64, body []byte, err error) {
-	r, err := t.Conn.cmd(nil, t, nil, "reserve-with-timeout", timeoutSec)
+func (t *TubeSet) Reserve(timeout time.Duration) (id uint64, body []byte, err error) {
+	r, err := t.Conn.cmd(nil, t, nil, "reserve-with-timeout", dur2sec(timeout))
 	if err != nil {
 		return 0, nil, err
 	}

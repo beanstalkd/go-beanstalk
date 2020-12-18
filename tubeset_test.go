@@ -2,11 +2,12 @@ package beanstalk
 
 import (
 	"testing"
+	"time"
 )
 
 func TestTubeSetReserve(t *testing.T) {
 	c := NewConn(mock("reserve-with-timeout 1\r\n", "RESERVED 1 1\r\nx\r\n"))
-	id, body, err := c.Reserve(1)
+	id, body, err := c.Reserve(time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +24,7 @@ func TestTubeSetReserve(t *testing.T) {
 
 func TestTubeSetReserveTimeout(t *testing.T) {
 	c := NewConn(mock("reserve-with-timeout 1\r\n", "TIMED_OUT\r\n"))
-	_, _, err := c.Reserve(1)
+	_, _, err := c.Reserve(time.Second)
 	if cerr, ok := err.(ConnError); !ok {
 		t.Log(err)
 		t.Logf("%#v", err)

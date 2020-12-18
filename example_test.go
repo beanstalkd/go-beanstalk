@@ -3,12 +3,13 @@ package beanstalk_test
 import (
 	"fmt"
 	"github.com/beanstalkd/go-beanstalk"
+	"time"
 )
 
 var conn, _ = beanstalk.Dial("tcp", "127.0.0.1:11300")
 
 func Example_reserve() {
-	id, body, err := conn.Reserve(5)
+	id, body, err := conn.Reserve(5 * time.Second)
 	if err != nil {
 		panic(err)
 	}
@@ -18,7 +19,7 @@ func Example_reserve() {
 
 func Example_reserveOtherTubeSet() {
 	tubeSet := beanstalk.NewTubeSet(conn, "mytube1", "mytube2")
-	id, body, err := tubeSet.Reserve(10 * 60 * 60)
+	id, body, err := tubeSet.Reserve(10 * time.Hour)
 	if err != nil {
 		panic(err)
 	}
@@ -27,7 +28,7 @@ func Example_reserveOtherTubeSet() {
 }
 
 func Example_put() {
-	id, err := conn.Put([]byte("myjob"), 1, 0, 60)
+	id, err := conn.Put([]byte("myjob"), 1, 0, time.Minute)
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +37,7 @@ func Example_put() {
 
 func Example_putOtherTube() {
 	tube := beanstalk.NewTube(conn, "mytube")
-	id, err := tube.Put([]byte("myjob"), 1, 0, 60)
+	id, err := tube.Put([]byte("myjob"), 1, 0, time.Minute)
 	if err != nil {
 		panic(err)
 	}
