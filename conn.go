@@ -73,6 +73,13 @@ func (c *Conn) Close() error {
 }
 
 func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interface{}) (req, error) {
+	// negative dur checking
+	for _, arg := range args {
+		if d, _ := arg.(dur); d < 0 {
+			return req{}, fmt.Errorf("duration must be non-negative, got %v", time.Duration(d))
+		}
+	}
+
 	r := req{c.c.Next(), op}
 	c.c.StartRequest(r.id)
 	defer c.c.EndRequest(r.id)
@@ -182,7 +189,7 @@ func (c *Conn) Delete(id uint64) error {
 // jobs reserved by c, wait delay seconds, then place the job in the
 // ready queue, which makes it available for reservation by any client.
 func (c *Conn) Release(id uint64, pri uint32, delay time.Duration) error {
-	r, err := c.cmd(nil, nil, nil, "release", id, pri, dur2sec(delay))
+	r, err := c.cmd(nil, nil, nil, "release", id, pri, dur(delay))
 	if err != nil {
 		return err
 	}

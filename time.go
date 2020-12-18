@@ -5,9 +5,8 @@ import (
 	"time"
 )
 
-func dur2sec(d time.Duration) string {
-	if d < 0 {
-		d = 0
-	}
-	return strconv.FormatInt(int64(d/time.Second), 10)
+type dur time.Duration
+
+func (d dur) String() string {
+	return strconv.FormatInt(int64(time.Duration(d)/time.Second), 10)
 }
