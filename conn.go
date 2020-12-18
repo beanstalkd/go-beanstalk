@@ -73,6 +73,13 @@ func (c *Conn) Close() error {
 }
 
 func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interface{}) (req, error) {
+	// negative dur checking
+	for _, arg := range args {
+		if d, _ := arg.(dur); d < 0 {
+			return req{}, fmt.Errorf("duration must be non-negative, got %v", time.Duration(d))
+		}
+	}
+
 	r := req{c.c.Next(), op}
 	c.c.StartRequest(r.id)
 	defer c.c.EndRequest(r.id)

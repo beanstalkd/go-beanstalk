@@ -44,6 +44,16 @@ func TestNameBadChar(t *testing.T) {
 	}
 }
 
+func TestNegativeDuration(t *testing.T) {
+	c := NewConn(mock("", ""))
+	tube := NewTube(c, "foo")
+	for _, d := range []time.Duration{-100 * time.Millisecond, -2 * time.Second} {
+		if _, err := tube.Put([]byte("hello"), 0, d, d); err == nil {
+			t.Fatalf("put job with negative duration %v expected error, got nil", d)
+		}
+	}
+}
+
 func TestDeleteMissing(t *testing.T) {
 	c := NewConn(mock("delete 1\r\n", "NOT_FOUND\r\n"))
 
