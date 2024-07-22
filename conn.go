@@ -80,13 +80,15 @@ func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interfa
 		}
 	}
 
+	// tube name checking
+	if err := validateTubes(t, ts); err != nil {
+		return req{}, err
+	}
+
 	r := req{c.c.Next(), op}
 	c.c.StartRequest(r.id)
 	defer c.c.EndRequest(r.id)
-	err := c.adjustTubes(t, ts)
-	if err != nil {
-		return req{}, err
-	}
+	c.adjustTubes(t, ts)
 	if body != nil {
 		args = append(args, len(body))
 	}
@@ -95,27 +97,37 @@ func (c *Conn) cmd(t *Tube, ts *TubeSet, body []byte, op string, args ...interfa
 		c.c.W.Write(body)
 		c.c.W.Write(crnl)
 	}
-	err = c.c.W.Flush()
+	err := c.c.W.Flush()
 	if err != nil {
 		return req{}, ConnError{c, op, err}
 	}
 	return r, nil
 }
 
-func (c *Conn) adjustTubes(t *Tube, ts *TubeSet) error {
-	if t != nil && t.Name != c.used {
+func validateTubes(t *Tube, ts *TubeSet) error {
+	if t != nil {
 		if err := checkName(t.Name); err != nil {
 			return err
 		}
+	}
+	if ts != nil {
+		for s := range ts.Name {
+			if err := checkName(s); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *Conn) adjustTubes(t *Tube, ts *TubeSet) {
+	if t != nil && t.Name != c.used {
 		c.printLine("use", t.Name)
 		c.used = t.Name
 	}
 	if ts != nil {
 		for s := range ts.Name {
 			if !c.watched[s] {
-				if err := checkName(s); err != nil {
-					return err
-				}
 				c.printLine("watch", s)
 			}
 		}
@@ -129,7 +141,6 @@ func (c *Conn) adjustTubes(t *Tube, ts *TubeSet) error {
 			c.watched[s] = true
 		}
 	}
-	return nil
 }
 
 // does not flush
