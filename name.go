@@ -33,6 +33,8 @@ func checkName(s string) error {
 	switch {
 	case len(s) == 0:
 		return NameError{s, ErrEmpty}
+	case s[0] == '-':
+		return NameError{s, ErrBadChar}
 	case len(s) >= 200:
 		return NameError{s, ErrTooLong}
 	case !containsOnly(s, NameChars):
